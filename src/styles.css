@@ -284,9 +284,9 @@ article[data-testid="tweet"][data-tg="reveal"] > .tg-breadcrumb .tg-bc-label::be
 }
 
 /* ============================================================================
-   悬浮"标记为垃圾"按钮（仅在已判为 ok 的推文上显示）
+   "标记为垃圾"按钮（仅在已判为 ok 的推文上显示）
    位置：article 右上角，避开 X 的 "..." 菜单
-   交互：hover 整条推文时半透出现，hover 按钮本身高亮
+   策略：始终低强度可见（让用户能发现），hover 整条时变明显，hover 按钮本身时强提示
    ============================================================================ */
 article[data-testid="tweet"][data-tg="ok"] {
   position: relative;
@@ -294,10 +294,10 @@ article[data-testid="tweet"][data-tg="ok"] {
 
 article[data-testid="tweet"] > .tg-mark-spam-btn {
   position: absolute;
-  top: 10px;
+  top: 8px;
   right: 56px;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   margin: 0;
   background: transparent;
@@ -305,29 +305,50 @@ article[data-testid="tweet"] > .tg-mark-spam-btn {
   border-radius: 999px;
   color: var(--tg-text-faint);
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 200ms ease, color 140ms, background 140ms, border-color 140ms;
+  /* 关键：从"完全隐形 + hover 才出现"改为"始终半隐可见 + hover 强化" */
+  opacity: 0.45;
+  transition: opacity 180ms ease, color 140ms ease, background 140ms ease,
+              border-color 140ms ease, transform 140ms ease;
   z-index: 5;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
+/* 推文级 hover：提示这个区域有可交互按钮 */
 article[data-testid="tweet"]:hover > .tg-mark-spam-btn,
 article[data-testid="tweet"] > .tg-mark-spam-btn:focus-visible {
-  opacity: 0.55;
+  opacity: 0.85;
+  background: var(--tg-bg-soft);
+  border-color: var(--tg-border);
 }
+/* 按钮本身 hover：明确"将要执行的危险动作"——琥珀色警示 + 轻微放大 */
 article[data-testid="tweet"] > .tg-mark-spam-btn:hover {
   opacity: 1;
   color: var(--tg-warn);
-  background: rgba(184, 134, 11, 0.08);
-  border-color: rgba(184, 134, 11, 0.25);
+  background: rgba(184, 134, 11, 0.12);
+  border-color: rgba(184, 134, 11, 0.45);
+  transform: scale(1.08);
+}
+article[data-testid="tweet"] > .tg-mark-spam-btn:active {
+  transform: scale(0.96);
 }
 /* hide 状态的推文不显示这个按钮（已经有面包屑里的 "信任" 按钮做反向操作） */
 article[data-testid="tweet"][data-tg="hide"] > .tg-mark-spam-btn,
 article[data-testid="tweet"][data-tg="pending"] > .tg-mark-spam-btn,
 article[data-testid="tweet"][data-tg="reveal"] > .tg-mark-spam-btn {
   display: none;
+}
+
+/* 减少 motion 偏好下不要弹跳 */
+@media (prefers-reduced-motion: reduce) {
+  article[data-testid="tweet"] > .tg-mark-spam-btn {
+    transition: opacity 120ms ease, color 120ms ease;
+  }
+  article[data-testid="tweet"] > .tg-mark-spam-btn:hover {
+    transform: none;
+  }
 }
 
 /* ============================================================================

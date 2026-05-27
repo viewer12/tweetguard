@@ -1137,9 +1137,10 @@
     btn.type = 'button';
     btn.title = 'TweetGuard: 标记为垃圾，让 AI 学习';
     btn.setAttribute('aria-label', '标记为垃圾');
+    // 实心 flag 图标 —— 视觉重量比之前的细线版本更大、识别度更高
     btn.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M3 14V2M3 2H11L9.5 5L11 8H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M4 17V3.5C4 3.22 4.22 3 4.5 3H15.2C15.6 3 15.85 3.42 15.68 3.78L13.5 8L15.68 12.22C15.85 12.58 15.6 13 15.2 13H5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.12"/>
       </svg>
     `;
     btn.addEventListener('click', (e) => {
