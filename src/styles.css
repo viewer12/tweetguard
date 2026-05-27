@@ -1,0 +1,381 @@
+/* TweetGuard 注入样式 — 仅在 x.com / twitter.com 生效
+   设计原则：克制、无渐变、与 X 原生 UI 协调、平滑过渡
+*/
+
+:root {
+  --tg-bg: #ffffff;
+  --tg-bg-soft: #f7f9f9;
+  --tg-border: #eff3f4;
+  --tg-text: #0f1419;
+  --tg-text-soft: #536471;
+  --tg-text-faint: #8b98a5;
+  --tg-accent: #0f172a;
+  --tg-warn: #b8860b;
+  --tg-radius: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tg-bg: #16181c;
+    --tg-bg-soft: #1c1f23;
+    --tg-border: #2f3336;
+    --tg-text: #e7e9ea;
+    --tg-text-soft: #8b98a5;
+    --tg-text-faint: #71767b;
+    --tg-accent: #e7e9ea;
+    --tg-warn: #d4a847;
+  }
+}
+
+/* ============================================================================
+   插件未启用时——清除所有状态
+   ============================================================================ */
+html[data-tg-enabled="0"] article[data-testid="tweet"][data-tg] {
+  /* 一切归零 */
+}
+html[data-tg-enabled="0"] article[data-testid="tweet"] > .tg-breadcrumb {
+  display: none !important;
+}
+
+/* ============================================================================
+   Pending 状态：右上角一颗温和的脉冲点（不打扰阅读）
+   ============================================================================ */
+article[data-testid="tweet"][data-tg="pending"] {
+  position: relative;
+}
+article[data-testid="tweet"][data-tg="pending"]::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tg-warn);
+  box-shadow: 0 0 0 0 rgba(184, 134, 11, 0.35);
+  animation: tg-pulse 1.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+@keyframes tg-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); box-shadow: 0 0 0 0 rgba(184, 134, 11, 0.35); }
+  50%      { opacity: 1;    transform: scale(1.15); box-shadow: 0 0 0 3px rgba(184, 134, 11, 0); }
+}
+
+/* ============================================================================
+   关键修复：X 在单帖详情页给 article 用了 flex-direction: row
+   导致面包屑挤到左列、X 内容挤到右列。强制切换成 column 把它们竖向堆叠。
+   仅在 hide / reveal / pending 状态下生效，不污染原生信息流的"ok"状态。
+   ============================================================================ */
+article[data-testid="tweet"][data-tg="hide"],
+article[data-testid="tweet"][data-tg="reveal"],
+article[data-testid="tweet"][data-tg="pending"] {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* ============================================================================
+   Hide 状态 · 模式 A：面包屑收起（默认）
+   关键：max-height + opacity transition，平滑非跳跃
+   ============================================================================ */
+html[data-tg-mode="breadcrumb"] article[data-testid="tweet"][data-tg="hide"] {
+  max-height: 40px;
+  overflow: hidden;
+  transition: max-height 360ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 220ms ease;
+  position: relative;
+}
+html[data-tg-mode="breadcrumb"] article[data-testid="tweet"][data-tg="hide"] > *:not(.tg-breadcrumb) {
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+/* ============================================================================
+   Hide 状态 · 模式 B：原地码掉（零 layout shift）
+   ============================================================================ */
+html[data-tg-mode="blur"] article[data-testid="tweet"][data-tg="hide"] {
+  position: relative;
+}
+html[data-tg-mode="blur"] article[data-testid="tweet"][data-tg="hide"] > *:not(.tg-breadcrumb) {
+  filter: blur(10px) saturate(0.5);
+  opacity: 0.45;
+  transition: filter 260ms ease, opacity 260ms ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ============================================================================
+   Hide 状态 · 模式 C：完全 remove（不推荐，保留为选项）
+   ============================================================================ */
+html[data-tg-mode="remove"] article[data-testid="tweet"][data-tg="hide"] {
+  display: none !important;
+}
+
+/* ============================================================================
+   面包屑（在所有模式下都显示，是 hide 状态的"标签"）
+   ============================================================================ */
+.tg-breadcrumb {
+  display: none;
+  flex-direction: column;       /* head + details 上下堆叠 */
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--tg-text-soft);
+  background: var(--tg-bg-soft);
+  border-bottom: 1px solid var(--tg-border);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  position: relative;
+  z-index: 1;
+}
+
+.tg-bc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
+/* 详情面板：默认不展示，仅在 reveal 状态时显现 */
+.tg-bc-details {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 16px 10px;
+  border-top: 1px dashed var(--tg-border);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--tg-text-soft);
+}
+
+.tg-bc-detail-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.tg-bc-detail-label {
+  flex-shrink: 0;
+  font-weight: 500;
+  color: var(--tg-text-faint);
+  width: 30px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.tg-bc-detail-content {
+  flex: 1;
+  min-width: 0;
+  color: var(--tg-text-soft);
+  font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  word-break: break-word;
+}
+
+/* reveal 状态：展开详情面板 */
+article[data-testid="tweet"][data-tg="reveal"] > .tg-breadcrumb .tg-bc-details {
+  display: flex;
+}
+
+article[data-testid="tweet"][data-tg="hide"] > .tg-breadcrumb,
+article[data-testid="tweet"][data-tg="reveal"] > .tg-breadcrumb {
+  display: flex;       /* flex column；详情面板靠 .tg-bc-details 自己控制 */
+}
+
+html[data-tg-mode="blur"] article[data-testid="tweet"][data-tg="hide"] > .tg-breadcrumb {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 3;
+  background: var(--tg-bg);
+  border-bottom: none;
+  border-radius: 0 0 var(--tg-radius) var(--tg-radius);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.tg-bc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tg-text-faint);
+  flex-shrink: 0;
+}
+
+.tg-bc-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tg-bc-label {
+  color: var(--tg-text);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.tg-bc-meta {
+  color: var(--tg-text-faint);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tg-bc-reveal,
+.tg-bc-trust {
+  background: transparent;
+  border: 1px solid var(--tg-border);
+  color: var(--tg-text-soft);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  flex-shrink: 0;
+}
+
+.tg-bc-reveal:hover,
+.tg-bc-trust:hover {
+  background: var(--tg-bg);
+  color: var(--tg-text);
+  border-color: var(--tg-text-faint);
+}
+
+.tg-bc-trust {
+  border-color: transparent;
+  color: var(--tg-text-faint);
+}
+
+.tg-bc-trust:hover {
+  color: var(--tg-text);
+  border-color: var(--tg-border);
+}
+
+/* ============================================================================
+   Reveal 状态：用户主动展开
+   ============================================================================ */
+article[data-testid="tweet"][data-tg="reveal"] {
+  max-height: none !important;
+  overflow: visible !important;
+}
+article[data-testid="tweet"][data-tg="reveal"] > *:not(.tg-breadcrumb) {
+  opacity: 1 !important;
+  filter: none !important;
+  pointer-events: auto !important;
+  user-select: auto !important;
+}
+article[data-testid="tweet"][data-tg="reveal"] > .tg-breadcrumb {
+  background: transparent;
+  border-bottom: 1px dashed var(--tg-border);
+  font-size: 11px;
+}
+article[data-testid="tweet"][data-tg="reveal"] > .tg-breadcrumb .tg-bc-head {
+  height: 28px;
+  opacity: 0.85;
+}
+article[data-testid="tweet"][data-tg="reveal"] > .tg-breadcrumb .tg-bc-label::before {
+  content: "已展开 · ";
+  color: var(--tg-text-faint);
+}
+
+/* ============================================================================
+   悬浮"标记为垃圾"按钮（仅在已判为 ok 的推文上显示）
+   位置：article 右上角，避开 X 的 "..." 菜单
+   交互：hover 整条推文时半透出现，hover 按钮本身高亮
+   ============================================================================ */
+article[data-testid="tweet"][data-tg="ok"] {
+  position: relative;
+}
+
+article[data-testid="tweet"] > .tg-mark-spam-btn {
+  position: absolute;
+  top: 10px;
+  right: 56px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--tg-text-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 200ms ease, color 140ms, background 140ms, border-color 140ms;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+article[data-testid="tweet"]:hover > .tg-mark-spam-btn,
+article[data-testid="tweet"] > .tg-mark-spam-btn:focus-visible {
+  opacity: 0.55;
+}
+article[data-testid="tweet"] > .tg-mark-spam-btn:hover {
+  opacity: 1;
+  color: var(--tg-warn);
+  background: rgba(184, 134, 11, 0.08);
+  border-color: rgba(184, 134, 11, 0.25);
+}
+/* hide 状态的推文不显示这个按钮（已经有面包屑里的 "信任" 按钮做反向操作） */
+article[data-testid="tweet"][data-tg="hide"] > .tg-mark-spam-btn,
+article[data-testid="tweet"][data-tg="pending"] > .tg-mark-spam-btn,
+article[data-testid="tweet"][data-tg="reveal"] > .tg-mark-spam-btn {
+  display: none;
+}
+
+/* ============================================================================
+   页面内 toast（用户反馈操作后的轻量提示，右下角浮起）
+   ============================================================================ */
+.tg-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100000;
+  max-width: 320px;
+  background: #0f172a;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 240ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18),
+              0 2px 6px rgba(15, 23, 42, 0.08);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+}
+.tg-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-color-scheme: dark) {
+  .tg-toast {
+    background: #e7e9ea;
+    color: #0c0d0f;
+  }
+}
+
+/* ============================================================================
+   减少 motion 的辅助处理（尊重用户系统偏好）
+   ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  article[data-testid="tweet"][data-tg="hide"],
+  article[data-testid="tweet"][data-tg="hide"] > *:not(.tg-breadcrumb) {
+    transition: none !important;
+  }
+  article[data-testid="tweet"][data-tg="pending"]::after {
+    animation: none;
+    opacity: 0.7;
+  }
+}

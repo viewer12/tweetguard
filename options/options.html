@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>TweetGuard 设置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+          <path d="M10 1.5L3 4.5V10C3 14 6 17.5 10 18.5C14 17.5 17 14 17 10V4.5L10 1.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M7 10L9 12L13 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <div class="sidebar-name">TweetGuard</div>
+          <div class="sidebar-version">v0.1.0</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button data-tab="general" class="nav-item active">通用</button>
+        <button data-tab="ai" class="nav-item">AI 提供商</button>
+        <button data-tab="prompt" class="nav-item">Prompt</button>
+        <button data-tab="rules" class="nav-item">规则与权重</button>
+        <button data-tab="cache" class="nav-item">已识别账号</button>
+        <button data-tab="lists" class="nav-item">白名单 / 黑名单</button>
+        <button data-tab="about" class="nav-item">关于</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+
+      <!-- ─────────────────── 通用 ─────────────────── -->
+      <section class="tab" data-tab="general">
+        <header class="tab-header">
+          <h1>通用</h1>
+          <p>开关、灵敏度、隐藏方式与启用模块。</p>
+        </header>
+
+        <div class="card">
+          <div class="row row-between">
+            <div class="row-text">
+              <div class="row-title">启用 TweetGuard</div>
+              <div class="row-desc">关闭后所有推文恢复原样，已识别账号缓存保留。</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="opt-enabled">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-title">灵敏度</div>
+            <div class="card-section-desc">
+              提高灵敏度可拦截更多边缘情况，代价是误判率略高。建议先用「标准」试用一周。
+            </div>
+            <div class="segmented" id="opt-sensitivity">
+              <button data-value="conservative" type="button">
+                <span class="seg-label">保守</span>
+                <span class="seg-meta">hide ≥ 80 · AI ≥ 30</span>
+              </button>
+              <button data-value="standard" type="button">
+                <span class="seg-label">标准</span>
+                <span class="seg-meta">hide ≥ 70 · AI ≥ 15</span>
+              </button>
+              <button data-value="aggressive" type="button">
+                <span class="seg-label">激进</span>
+                <span class="seg-meta">hide ≥ 55 · AI 全检</span>
+              </button>
+            </div>
+            <div class="field-hint" style="margin-top: 10px">
+              「hide ≥ X」是 L0 规则的直接拦截阈值；「AI ≥ X」是把推文送给 AI 复核的最低分。
+              激进模式下 AI 评估所有未缓存推文，能抓到 L0 完全没信号的 bot（比如显示名 "vk" + sao 货这种），代价是 AI 调用量 3-5x。
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card-section">
+            <div class="card-section-title">隐藏方式</div>
+            <div class="card-section-desc">
+              「面包屑」收起为细条，仍可点开；「码掉」保留布局只模糊；「移除」会让信息流跳动。
+            </div>
+            <div class="radio-group" id="opt-hidemode">
+              <label class="radio">
+                <input type="radio" name="opt-hidemode" value="breadcrumb">
+                <span class="radio-mark"></span>
+                <div class="radio-body">
+                  <div class="radio-label">面包屑 <span class="badge">推荐</span></div>
+                  <div class="radio-hint">收起为 40px 细条 · 平滑 350ms 过渡 · 点击恢复</div>
+                </div>
+              </label>
+              <label class="radio">
+                <input type="radio" name="opt-hidemode" value="blur">
+                <span class="radio-mark"></span>
+                <div class="radio-body">
+                  <div class="radio-label">原地码掉</div>
+                  <div class="radio-hint">完全不动布局 · 模糊化覆盖 · 顶部浮动标签</div>
+                </div>
+              </label>
+              <label class="radio">
+                <input type="radio" name="opt-hidemode" value="remove">
+                <span class="radio-mark"></span>
+                <div class="radio-body">
+                  <div class="radio-label">彻底移除</div>
+                  <div class="radio-hint">display:none · 信息流可能跳动，慎用</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-title">启用模块</div>
+            <div class="card-section-desc">
+              针对不同类型的垃圾账号，独立开关。
+            </div>
+            <div class="module-list" id="opt-modules">
+              <!-- 由 JS 渲染 -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────── AI ─────────────────── -->
+      <section class="tab" data-tab="ai" hidden>
+        <header class="tab-header">
+          <h1>AI 提供商</h1>
+          <p>配置你自己的 AI API，TweetGuard 用它判定 L0 规则无法决断的灰区推文。</p>
+        </header>
+
+        <div class="card">
+          <div class="row row-between">
+            <div class="row-text">
+              <div class="row-title">启用 AI 增强</div>
+              <div class="row-desc">关闭时仅使用本地规则。开启后约 5%-10% 灰区推文会调用你的 API。</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="opt-ai-enabled">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card" id="ai-config-card">
+          <div class="card-section">
+            <div class="field">
+              <label class="field-label">Provider</label>
+              <select id="opt-ai-provider" class="select"></select>
+              <div class="field-hint" id="opt-ai-provider-note"></div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Model</label>
+              <div class="field-combo">
+                <select id="opt-ai-model" class="select"></select>
+                <input id="opt-ai-model-custom" class="input" type="text" placeholder="或填自定义模型名" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">API Key</label>
+              <div class="field-combo">
+                <input id="opt-ai-key" class="input" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false">
+                <button id="opt-ai-key-toggle" class="btn-icon" type="button" title="显示/隐藏">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M1 8C2.5 4.5 5 3 8 3C11 3 13.5 4.5 15 8C13.5 11.5 11 13 8 13C5 13 2.5 11.5 1 8Z" stroke="currentColor" stroke-width="1.2"/>
+                    <circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.2"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="field-hint">仅存于本地浏览器，永不外传。</div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Base URL</label>
+              <input id="opt-ai-baseurl" class="input" type="text" placeholder="https://api.deepseek.com/v1" autocomplete="off" spellcheck="false">
+              <div class="field-hint">OpenAI 兼容路径，结尾不需要带 <code>/chat/completions</code>。</div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">超时</label>
+              <div class="field-combo">
+                <input id="opt-ai-timeout" class="input input-small" type="number" min="2000" max="30000" step="500">
+                <span class="field-suffix">毫秒</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card-section">
+            <div class="card-section-title">连接测试</div>
+            <div class="card-section-desc">
+              用 5 个已知样本（中文色情 bot / 加密 shill / 正常用户等）测试你的配置。
+            </div>
+            <div class="test-row">
+              <button id="opt-ai-test" class="btn btn-primary" type="button">运行测试</button>
+              <div class="test-result" id="opt-ai-test-result"></div>
+            </div>
+            <div id="opt-ai-test-detail" class="test-detail"></div>
+          </div>
+        </div>
+
+        <div class="card stats-card">
+          <div class="stats-card-header">
+            <div class="card-section-title">使用统计</div>
+            <button id="stats-reset" class="btn btn-ghost btn-sm" type="button">重置统计</button>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-item">
+              <div class="stat-num" id="stat-ai-calls">0</div>
+              <div class="stat-label">AI 调用</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num" id="stat-cache-hits">0</div>
+              <div class="stat-label">缓存命中</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num" id="stat-cache-rate">—</div>
+              <div class="stat-label">命中率</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num" id="stat-total-hidden">0</div>
+              <div class="stat-label">累计隐藏</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────── Prompt ─────────────────── -->
+      <section class="tab" data-tab="prompt" hidden>
+        <header class="tab-header">
+          <h1>Prompt 编辑</h1>
+          <p>TweetGuard 发给你 AI 的所有提示词都列在这里，可看可改可还原。默认 prompt 经过 prompt-injection 防御与多语言优化，建议先观察后再改。</p>
+        </header>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="segmented prompt-switcher" id="prompt-switcher">
+              <button data-prompt="classifier" type="button" class="active">
+                <span class="seg-label">分类 Prompt</span>
+                <span class="seg-meta">推文 spam 判定</span>
+              </button>
+              <button data-prompt="review" type="button">
+                <span class="seg-label">复审 Prompt</span>
+                <span class="seg-meta">用户标记误判时反思</span>
+              </button>
+            </div>
+            <div class="prompt-current-desc" id="prompt-current-desc">
+              每条灰区推文都用这个 prompt 判断是否为 spam，返回 JSON 决策 + 可选的泛化签名。每次调用 ~700 input tokens。
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card-section">
+            <div class="prompt-toolbar">
+              <div class="prompt-info">
+                <span id="prompt-status" class="prompt-status">使用默认 Prompt</span>
+                <span class="prompt-counter" id="prompt-counter">0 字符</span>
+              </div>
+              <div class="prompt-actions">
+                <button id="prompt-reset" class="btn btn-ghost" type="button" disabled>恢复默认</button>
+                <button id="prompt-save" class="btn btn-primary" type="button" disabled>保存修改</button>
+              </div>
+            </div>
+            <textarea id="prompt-editor" class="prompt-editor" spellcheck="false" placeholder="加载中…"></textarea>
+            <details class="prompt-tips">
+              <summary>编写 Prompt 的建议</summary>
+              <ul>
+                <li>保留 <code>SECURITY</code> 段 — 防止 bot 在推文里注入指令操纵你的 AI</li>
+                <li>保留输出 JSON schema — 否则下游解析会失败（缓存 / 学习规则）</li>
+                <li>分类 prompt 控制"什么算 spam"；复审 prompt 控制"AI 学错了规则之后如何反思"</li>
+                <li>新增类别时同步在「规则」tab 添加对应模块开关，否则统计图表不显示</li>
+                <li>建议把你最近遇到的特定 spam 模式举例放进 prompt 末尾（few-shot），命中率会显著提升</li>
+              </ul>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────── 规则 ─────────────────── -->
+      <section class="tab" data-tab="rules" hidden>
+        <header class="tab-header">
+          <h1>规则与权重</h1>
+          <p>L0 规则引擎在 AI 之前快速过滤明显的 spam。展示当前激活的规则与你的自定义关键词。</p>
+        </header>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-title">硬规则（一票否决）</div>
+            <div class="card-section-desc">命中任一即判为 spam，跳过评分循环。</div>
+            <div class="rules-grid">
+              <div class="rule-item"><span class="rule-id">R2</span><span class="rule-text">NSFW handle + NSFW killer 关键词</span></div>
+              <div class="rule-item"><span class="rule-id">R3</span><span class="rule-text">pump.fun 链接 + 是回复</span></div>
+              <div class="rule-item"><span class="rule-id">R4</span><span class="rule-text">显示名含 OnlyFans/Fansly + 是回复</span></div>
+              <div class="rule-item"><span class="rule-id">R6</span><span class="rule-text">显示名含 4+ NSFW emoji</span></div>
+              <div class="rule-item"><span class="rule-id">R7</span><span class="rule-text">显示名含「寻炮 / 约炮 / 点击主页 / 找男友 / 老司机」等中文引流词</span></div>
+              <div class="rule-item"><span class="rule-id">R8</span><span class="rule-text">emoji 分隔符显示名 + 英文+长数字 handle</span></div>
+              <div class="rule-item"><span class="rule-id">R9</span><span class="rule-text">CJK 显示名 + 英文+长数字 handle + 推文纯 emoji</span></div>
+              <div class="rule-item"><span class="rule-id">R10</span><span class="rule-text">显示名含「加微 / 加 TG / 电报 / 纸飞机」+ 是回复</span></div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card-section">
+            <div class="card-section-title">评分信号（17 项）</div>
+            <div class="card-section-desc">每条推文按这些信号累加分数；超过阈值即触发。</div>
+            <div class="signals-grid" id="signals-grid"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-header">
+              <div class="card-section-header-text">
+                <div class="card-section-title">
+                  AI 学习到的规则
+                  <span class="badge" id="learned-rules-count">0</span>
+                </div>
+                <div class="card-section-desc">
+                  每次 AI 识别出 L0 漏判的 spam，会自动总结一个泛化签名存到这里。下次类似 spam 再出现，L0 直接命中，零 API 消耗。
+                </div>
+              </div>
+              <button id="learned-rules-clear" class="btn btn-ghost btn-sm" type="button">全部清空</button>
+            </div>
+            <div class="learned-rules-list" id="learned-rules-list">
+              <div class="empty-state">AI 还没学到新规则。启用 AI 并浏览一段时间后会自动填充。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-header">
+              <div class="card-section-header-text">
+                <div class="card-section-title">
+                  用户反馈历史
+                  <span class="badge" id="badcase-count">0</span>
+                </div>
+                <div class="card-section-desc">
+                  你手动标记的误判会送 AI 复盘并自动调整规则。<br>
+                  · 浏览 X 时，对已隐藏的推文点「信任」=「我觉得这条不是垃圾」<br>
+                  · 对未隐藏的可疑推文，hover 时右上角小旗按钮 → 标记为垃圾
+                </div>
+              </div>
+              <button id="badcase-clear" class="btn btn-ghost btn-sm" type="button">清空历史</button>
+            </div>
+            <div class="badcase-list" id="badcase-list">
+              <div class="empty-state">还没有反馈记录。在 X 上标记几条试试。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-title">自定义关键词</div>
+            <div class="card-section-desc">命中任一关键词加 30 分，模糊匹配（大小写不敏感）。</div>
+            <div class="chip-input">
+              <div class="chip-list" id="custom-keyword-list"></div>
+              <input id="custom-keyword-input" type="text" placeholder="输入关键词后回车" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────── 缓存 ─────────────────── -->
+      <section class="tab" data-tab="cache" hidden>
+        <header class="tab-header">
+          <h1>已识别账号</h1>
+          <p>规则与 AI 对每个账号的判定都缓存在本地。再次遇到同账号瞬时应用，无需重复评估。</p>
+        </header>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="cache-toolbar">
+              <input id="cache-search" type="text" class="input search-input" placeholder="搜索 @handle、分类或原因…">
+              <select id="cache-filter" class="select">
+                <option value="all">所有 (0)</option>
+                <option value="spam">已隐藏</option>
+                <option value="normal">已放行</option>
+              </select>
+              <button id="cache-export" class="btn btn-ghost" type="button">导出</button>
+              <button id="cache-import" class="btn btn-ghost" type="button">导入</button>
+              <button id="cache-clear" class="btn btn-danger" type="button">清空…</button>
+            </div>
+            <div class="cache-list" id="cache-list">
+              <div class="empty-state">还没有缓存的判定，浏览 X 后会自动填充。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────── 名单 ─────────────────── -->
+      <section class="tab" data-tab="lists" hidden>
+        <header class="tab-header">
+          <h1>白名单 / 黑名单 / 关注列表</h1>
+          <p>白名单永不隐藏；黑名单永远隐藏；关注列表是减分保护（避免误伤）。</p>
+        </header>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-title">白名单</div>
+            <div class="card-section-desc">输入 X handle（不含 @ 也行），回车添加。</div>
+            <div class="chip-input">
+              <div class="chip-list" id="whitelist-list"></div>
+              <input id="whitelist-input" type="text" placeholder="@handle" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-title">黑名单</div>
+            <div class="card-section-desc">这些 handle 永远 hide，不需要规则判定。</div>
+            <div class="chip-input">
+              <div class="chip-list" id="blacklist-list"></div>
+              <input id="blacklist-input" type="text" placeholder="@handle" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-title">关注列表（保护）</div>
+            <div class="card-section-desc">
+              当前同步了 <strong id="following-count">0</strong> 位关注用户。访问你的 Following 页可自动同步。
+            </div>
+            <details class="details-block">
+              <summary>查看 / 编辑同步的关注列表</summary>
+              <div class="chip-input mt-8">
+                <div class="chip-list" id="following-list"></div>
+                <input id="following-input" type="text" placeholder="@handle" />
+              </div>
+              <div class="row mt-8">
+                <button id="following-clear" class="btn btn-ghost" type="button">清空关注列表</button>
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────── 关于 ─────────────────── -->
+      <section class="tab" data-tab="about" hidden>
+        <header class="tab-header">
+          <h1>关于 TweetGuard</h1>
+        </header>
+
+        <div class="card">
+          <div class="card-section about-block">
+            <h3>隐私承诺</h3>
+            <ul class="about-list">
+              <li>TweetGuard 团队 <strong>不收集任何数据</strong>，没有任何后端服务器</li>
+              <li>所有配置、缓存、关注列表都只存在你的浏览器本地</li>
+              <li>启用 AI 后，部分推文会发送到 <em>你自己配置的</em> AI 提供商，TweetGuard 不参与中转</li>
+              <li>想绝对隐私？选 <code>Ollama</code> 本地模式 — 推文永远不离开你的设备</li>
+            </ul>
+          </div>
+          <div class="divider"></div>
+          <div class="card-section about-block">
+            <h3>它是怎么工作的</h3>
+            <ol class="about-list">
+              <li><strong>L0 规则</strong>：17 项快速信号 + 10 条硬规则，毫秒内决断 ~80% 显性 spam</li>
+              <li><strong>缓存</strong>：对每个账号的判定缓存到本地，下次遇到瞬时应用（无 AI 调用）</li>
+              <li><strong>AI</strong>：仅对 L0 灰区（评分 20-70）的推文调用一次 AI 复核</li>
+              <li><strong>面包屑</strong>：被识别的推文平滑收起为 40px 细条，平均 350ms 过渡，可一键展开</li>
+            </ol>
+          </div>
+          <div class="divider"></div>
+          <div class="card-section about-block">
+            <h3>版本</h3>
+            <div class="kv-row"><span>当前版本</span><code>0.1.0</code></div>
+            <div class="kv-row"><span>规则集</span><code>default v1</code></div>
+            <div class="kv-row"><span>许可</span><code>MIT</code></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- 确认对话框 -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel">
+      <div class="modal-title" id="modal-title">确认</div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modal-cancel">取消</button>
+        <button class="btn btn-danger" id="modal-confirm">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <input type="file" id="import-file" accept="application/json" hidden>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

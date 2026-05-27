@@ -1,0 +1,337 @@
+/* TweetGuard Popup — 克制 monochrome 风格
+   设计参考：Linear / Vercel / 1Password 的精确感
+   零渐变、零紫色、零 emoji 装饰 */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #ffffff;
+  --bg-soft: #f8fafc;
+  --bg-elevated: #ffffff;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text: #0f172a;
+  --text-soft: #475569;
+  --text-faint: #94a3b8;
+  --accent: #0f172a;
+  --accent-soft: #1e293b;
+  --on-accent: #ffffff;
+  --success: #059669;
+  --warn: #b45309;
+  --danger: #b91c1c;
+  --radius: 8px;
+  --radius-sm: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c0d0f;
+    --bg-soft: #16181c;
+    --bg-elevated: #1c1f23;
+    --border: #2a2e34;
+    --border-strong: #383d44;
+    --text: #e7e9ea;
+    --text-soft: #a8b0b8;
+    --text-faint: #6b7280;
+    --accent: #e7e9ea;
+    --accent-soft: #cdd1d4;
+    --on-accent: #0c0d0f;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+  }
+}
+
+html, body {
+  width: 340px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+               -apple-system, "Helvetica Neue", Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container { padding: 14px 16px 12px; }
+
+/* ── Header ─────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.brand-icon { color: var(--accent); flex-shrink: 0; }
+
+.brand-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ── Switch ─────────────────────────────────────── */
+.switch { position: relative; cursor: pointer; display: inline-block; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+.switch-track {
+  display: block;
+  width: 36px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 999px;
+  position: relative;
+  transition: background 160ms ease;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.switch input:checked + .switch-track { background: var(--accent); }
+.switch input:checked + .switch-track .switch-thumb { transform: translateX(16px); }
+
+/* ── Stats ─────────────────────────────────────── */
+.stats {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.stats-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.stats-value {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.stats-label {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.stats-breakdown {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-faint);
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.stats-breakdown span { font-variant-numeric: tabular-nums; }
+.stats-breakdown em { color: var(--text-soft); font-style: normal; font-weight: 500; }
+
+/* ── Section ─────────────────────────────────────── */
+.section { margin-bottom: 14px; }
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+/* ── Segmented control (灵敏度) ────────────────── */
+.segmented {
+  display: flex;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.segmented button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-soft);
+  padding: 6px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.segmented button:hover { color: var(--text); }
+
+.segmented button.active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Radio group (隐藏方式) ─────────────────────── */
+.radio-group { display: flex; flex-direction: column; gap: 4px; }
+
+.radio {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.radio:hover { background: var(--bg-soft); }
+.radio:has(input:checked) {
+  background: var(--bg-soft);
+  border-color: var(--border);
+}
+
+.radio input { position: absolute; opacity: 0; pointer-events: none; }
+
+.radio-mark {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  margin-top: 2px;
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color 120ms ease;
+}
+
+.radio:has(input:checked) .radio-mark { border-color: var(--accent); }
+.radio:has(input:checked) .radio-mark::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.radio-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.radio-hint {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
+/* ── AI status ─────────────────────────────────── */
+.ai-status {
+  padding: 10px 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.ai-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.ai-status[data-on="1"] .ai-status-dot { background: var(--success); }
+.ai-status[data-error="1"] .ai-status-dot { background: var(--danger); }
+
+.ai-status-text {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.ai-status-meta {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-status-meta:empty { display: none; }
+
+/* ── Footer ─────────────────────────────────────── */
+.footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.btn:hover {
+  background: var(--bg-soft);
+  border-color: var(--border-strong);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-soft);
+}

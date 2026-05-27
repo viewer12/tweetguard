@@ -1,0 +1,46 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# Node (in case future tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Build output (in case future tooling)
+dist/
+build/
+out/
+
+# Logs
+*.log
+logs/
+
+# Local environment / overrides (defense-in-depth: never accidentally commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Personal config dumps (just in case any of these ever exist)
+config.local.json
+user.config.json
+*.private.json
+
+# OS thumbnails
+Thumbs.db
+ehthumbs.db
+Desktop.ini

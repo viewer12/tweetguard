@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>TweetGuard</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="brand">
+        <svg class="brand-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 1.5L3 4.5V10C3 14 6 17.5 10 18.5C14 17.5 17 14 17 10V4.5L10 1.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M7 10L9 12L13 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="brand-name">TweetGuard</span>
+      </div>
+      <label class="switch" title="启用/禁用">
+        <input type="checkbox" id="enabled-toggle" checked>
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </label>
+    </header>
+
+    <section class="stats" id="stats-block">
+      <div class="stats-main">
+        <div class="stats-value" id="stats-hidden">0</div>
+        <div class="stats-label">累计已隐藏</div>
+      </div>
+      <div class="stats-breakdown" id="stats-breakdown">
+        <span data-source="rule">规则 <em id="stats-rule">0</em></span>
+        <span data-source="ai">AI <em id="stats-ai">0</em></span>
+        <span data-source="cache">缓存 <em id="stats-cache">0</em></span>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">灵敏度</div>
+      <div class="segmented" id="sensitivity-control">
+        <button data-value="conservative" type="button">保守</button>
+        <button data-value="standard" type="button" class="active">标准</button>
+        <button data-value="aggressive" type="button">激进</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">隐藏方式</div>
+      <div class="radio-group" id="hidemode-control">
+        <label class="radio">
+          <input type="radio" name="hidemode" value="breadcrumb" checked>
+          <span class="radio-mark"></span>
+          <span class="radio-label">
+            面包屑
+            <span class="radio-hint">收起为细条，可点开</span>
+          </span>
+        </label>
+        <label class="radio">
+          <input type="radio" name="hidemode" value="blur">
+          <span class="radio-mark"></span>
+          <span class="radio-label">
+            原地码掉
+            <span class="radio-hint">不动布局，模糊化</span>
+          </span>
+        </label>
+        <label class="radio">
+          <input type="radio" name="hidemode" value="remove">
+          <span class="radio-mark"></span>
+          <span class="radio-label">
+            彻底移除
+            <span class="radio-hint">display:none，注意会跳动</span>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <section class="section ai-status" id="ai-status-block">
+      <div class="ai-status-row">
+        <span class="ai-status-dot" id="ai-status-dot"></span>
+        <span class="ai-status-text" id="ai-status-text">AI 未启用</span>
+      </div>
+      <div class="ai-status-meta" id="ai-status-meta"></div>
+    </section>
+
+    <footer class="footer">
+      <button class="btn btn-primary" id="open-options">设置</button>
+      <button class="btn btn-ghost" id="open-cache">已识别账号</button>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
