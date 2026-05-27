@@ -1160,7 +1160,7 @@
     article.setAttribute('data-tg-category', decision.category || 'normal');
     article.setAttribute('data-tg-source', source || 'rule');
     if (decision.handle) article.setAttribute('data-tg-handle', decision.handle);
-    // 把 source 也带进 decision，breadcrumb 详情面板要展示
+    // 把 source 也带进 decision，折叠条详情面板要展示
     ensureBreadcrumb(article, { ...decision, source: source || 'rule' });
 
     bumpThreadInfection();   // 集体感染计数 +1

@@ -64,7 +64,7 @@ article[data-testid="tweet"][data-tg="pending"]::after {
 
 /* ============================================================================
    关键修复：X 在单帖详情页给 article 用了 flex-direction: row
-   导致面包屑挤到左列、X 内容挤到右列。强制切换成 column 把它们竖向堆叠。
+   导致折叠条挤到左列、X 内容挤到右列。强制切换成 column 把它们竖向堆叠。
    仅在 hide / reveal / pending 状态下生效，不污染原生信息流的"ok"状态。
    ============================================================================ */
 article[data-testid="tweet"][data-tg="hide"],
@@ -75,8 +75,9 @@ article[data-testid="tweet"][data-tg="pending"] {
 }
 
 /* ============================================================================
-   Hide 状态 · 模式 A：面包屑收起（默认）
+   Hide 状态 · 模式 A：折叠条收起（默认）
    关键：max-height + opacity transition，平滑非跳跃
+   注：内部 CSS class 名沿用 .tg-breadcrumb（仅技术 ID，与产品文案"折叠条"无关）
    ============================================================================ */
 html[data-tg-mode="breadcrumb"] article[data-testid="tweet"][data-tg="hide"] {
   max-height: 40px;
@@ -113,7 +114,7 @@ html[data-tg-mode="remove"] article[data-testid="tweet"][data-tg="hide"] {
 }
 
 /* ============================================================================
-   面包屑（在所有模式下都显示，是 hide 状态的"标签"）
+   折叠条（在所有 hide/reveal 模式下都显示，是被识别推文的"标签")
    ============================================================================ */
 .tg-breadcrumb {
   display: none;
@@ -334,7 +335,7 @@ article[data-testid="tweet"] > .tg-mark-spam-btn:hover {
 article[data-testid="tweet"] > .tg-mark-spam-btn:active {
   transform: scale(0.96);
 }
-/* hide 状态的推文不显示这个按钮（已经有面包屑里的 "信任" 按钮做反向操作） */
+/* hide 状态的推文不显示这个按钮（已经有折叠条里的「信任」按钮做反向操作） */
 article[data-testid="tweet"][data-tg="hide"] > .tg-mark-spam-btn,
 article[data-testid="tweet"][data-tg="pending"] > .tg-mark-spam-btn,
 article[data-testid="tweet"][data-tg="reveal"] > .tg-mark-spam-btn {

@@ -48,7 +48,7 @@ Every tweet that appears in your feed flows through three layers:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-Detected tweets are not removed — they **smoothly collapse into a thin breadcrumb** showing what was hidden and why. One click reveals the original. Layout never jumps.
+Detected tweets are not removed — they **smoothly collapse into a thin strip** showing what was hidden and why. One click reveals the original. Layout never jumps.
 
 ---
 
@@ -60,7 +60,7 @@ Detected tweets are not removed — they **smoothly collapse into a thin breadcr
 - **Cross-handle template detection**: if you've reported "她太涩了 t" once and "她太涩了 x" later, the system auto-generalizes `tweet_keyword: "她太涩了"` without an AI call.
 - **Transparent**: every hidden tweet shows the exact rule(s) that fired, with one click. All rules are inspectable and editable.
 - **Asian-language aware**: ships with first-class rules for Chinese spam templates (寻固炮 / 加微 / 返佣 / 撸毛 / sao 货 / pan.quark.cn etc.) that English-first filters completely miss.
-- **No layout jank**: breadcrumb collapse uses CSS transitions; pending AI evaluations show a subtle pulsing dot rather than removing the tweet first then re-showing it.
+- **No layout jank**: the collapsed-strip transition uses CSS animations; pending AI evaluations show a subtle pulsing dot rather than removing the tweet first then re-showing it.
 - **Zero telemetry**: no servers, no analytics, no remote loading. The only outbound traffic is your explicit AI API calls.
 
 ---
@@ -143,7 +143,7 @@ TweetGuard/
 │   │                          actuator, AI client, feedback handlers
 │   ├── background.js          Service worker: AI fetch proxy
 │   ├── defaults.js            Default config, provider catalog, prompts
-│   └── styles.css             Page-injected CSS (breadcrumb, blur, pending)
+│   └── styles.css             Page-injected CSS (collapsed-strip, blur, pending states)
 ├── popup/                     Toolbar popup (quick toggle + stats)
 ├── options/                   Full settings page (7 tabs)
 ├── docs/                      Design documents
