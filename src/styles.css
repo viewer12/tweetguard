@@ -296,7 +296,9 @@ article[data-testid="tweet"][data-tg="ok"] {
 article[data-testid="tweet"] > .tg-mark-spam-btn {
   position: absolute;
   top: 8px;
-  right: 56px;
+  /* 偏移要避开 X 原生的"..."菜单（约 right:12）和 Grok"不感兴趣"⊘ 图标（约 right:48）
+     按钮自身 32px 宽 + 左侧再留 ~16px 间距 = 总偏移 ≈ 96px */
+  right: 96px;
   width: 32px;
   height: 32px;
   padding: 0;
