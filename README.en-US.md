@@ -4,7 +4,7 @@
 
 **Elegantly filter spam, crypto shills, and adult bots out of your X (Twitter) feed.**
 
-English · [简体中文](README.zh-CN.md)
+[简体中文](README.md) · English
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-0f172a.svg)](LICENSE)
 [![Chrome Extension](https://img.shields.io/badge/chrome-extension-0f172a.svg)](#installation)
