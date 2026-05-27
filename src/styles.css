@@ -296,9 +296,10 @@ article[data-testid="tweet"][data-tg="ok"] {
 article[data-testid="tweet"] > .tg-mark-spam-btn {
   position: absolute;
   top: 8px;
-  /* 偏移要避开 X 原生的"..."菜单（约 right:12）和 Grok"不感兴趣"⊘ 图标（约 right:48）
-     按钮自身 32px 宽 + 左侧再留 ~16px 间距 = 总偏移 ≈ 96px */
-  right: 96px;
+  /* X 自己的图标间距是 12px。和 Grok ⊘ 图标（左边缘约 right:64px）
+     保持 12px 间距 → 我们的按钮右边缘落在 right:76px。
+     设成 76px，与 X 原生 [⋯][⊘] 形成 [🚩][⊘][⋯] 一致节奏的三图标 cluster。*/
+  right: 76px;
   width: 32px;
   height: 32px;
   padding: 0;
