@@ -21,8 +21,6 @@ X (Twitter) has a runaway spam problem. By X's own admission, **80% of crypto ac
 
 TweetGuard is a Chrome extension that filters these out **on your side, in your browser**. No server. No telemetry. No data leaves your machine unless you explicitly bring your own AI API key.
 
-It's the spam filter you'd build for yourself if you had a couple of weeks.
-
 ---
 
 ## How it works (in 30 seconds)
@@ -186,9 +184,3 @@ Before opening a PR:
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
----
-
-<div align="center">
-<sub>Built for everyone who's tired of "check my bio" replies under every viral tweet.</sub>
-</div>
