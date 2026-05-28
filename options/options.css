@@ -1147,12 +1147,28 @@ code { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; fon
    ============================================================================ */
 .cache-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   margin-bottom: 14px;
 }
 
-.search-input { flex: 1; }
+.cache-toolbar .search-input {
+  flex: 1 1 240px;
+  width: auto;
+  min-width: 0;
+}
+
+.cache-toolbar .select {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 160px;
+}
+
+.cache-toolbar .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 
 .cache-list {
   display: flex;
