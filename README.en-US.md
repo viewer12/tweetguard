@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="icons/icon-128.png" width="96" height="96" alt="TweetGuard">
+
 # TweetGuard
 
 A Chrome extension that filters spam, crypto shills, and adult bots from the X (Twitter) feed.
@@ -72,8 +74,6 @@ Until the Chrome Web Store listing is published, install via developer mode:
 4. Click **Load unpacked** and select the cloned folder.
 5. Open `x.com` — built-in rules are active by default.
 
-The toolbar icon is optional: convert `icons/icon.svg` to 16/48/128 px PNGs and reference them under `"icons"` in `manifest.json`.
-
 ---
 
 ## Configuring AI (optional)
@@ -139,7 +139,7 @@ TweetGuard/
 ├── popup/                     Toolbar popup (quick toggle + stats)
 ├── options/                   Full settings page (7 tabs)
 ├── docs/                      Design documents
-└── icons/                     Source SVG icon
+└── icons/                     Icon assets (SVG master + 16/32/48/128 PNG)
 ```
 
 No build step. Edit a file, reload the extension at `chrome://extensions`, refresh `x.com`.
