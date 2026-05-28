@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="icons/icon-128.png" width="96" height="96" alt="TweetGuard">
+
 # TweetGuard
 
 **优雅地过滤 X (Twitter) 信息流中的垃圾号、营销号、色情 bot 和加密 shill。**
@@ -74,8 +76,6 @@ Chrome Web Store 上架前，开发者模式安装：
 4. 点 **加载已解压的扩展程序**，选择克隆下来的文件夹。
 5. 打开 `x.com`，TweetGuard 已经开始工作（内置规则默认启用）。
 
-> 想要工具栏图标？把 `icons/icon.svg` 转成 16/48/128 px 三种 PNG，在 `manifest.json` 里加上 `"icons"` 字段。不加也能正常运行。
-
 ---
 
 ## 配置 AI（可选但强烈推荐）
@@ -143,7 +143,7 @@ TweetGuard/
 ├── popup/                     工具栏弹窗（快速开关 + 统计）
 ├── options/                   完整设置页（7 个 tab）
 ├── docs/                      设计文档
-└── icons/                     源 SVG 图标
+└── icons/                     图标资源（SVG 主源 + 16/32/48/128 PNG 切图）
 ```
 
 无构建步骤、无转译。改完代码 → `chrome://extensions` 刷新扩展 → 刷新 `x.com` 即可。
