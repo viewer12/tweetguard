@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="icons/icon-128.png" width="96" height="96" alt="TweetGuard">
+
 # TweetGuard
 
 过滤 X (Twitter) 信息流中垃圾号、营销号、色情 bot 与加密 shill 的 Chrome 扩展。
@@ -72,8 +74,6 @@ Chrome Web Store 上架前，通过开发者模式安装：
 4. 点击 **加载已解压的扩展程序**，选择克隆下来的目录。
 5. 打开 `x.com` 即生效，默认启用内置规则。
 
-工具栏图标为可选：将 `icons/icon.svg` 转为 16/48/128 px PNG 后，在 `manifest.json` 中添加 `"icons"` 字段。
-
 ---
 
 ## 配置 AI（可选）
@@ -139,7 +139,7 @@ TweetGuard/
 ├── popup/                     工具栏弹窗（快速开关 + 统计）
 ├── options/                   完整设置页（7 个 tab）
 ├── docs/                      设计文档
-└── icons/                     源 SVG 图标
+└── icons/                     图标资源（SVG 主源 + 16/32/48/128 PNG 切图）
 ```
 
 无构建步骤。修改代码后在 `chrome://extensions` 刷新扩展并刷新 `x.com` 即可生效。
