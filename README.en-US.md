@@ -82,16 +82,25 @@ Flagged tweets collapse into a thin, card-width strip showing the reason and sou
 
 ## Install
 
-Until it's on the Chrome Web Store, install in developer mode:
+Until it's on the Chrome Web Store, install in developer mode. Pick either option:
+
+**Option A — download the packaged zip (recommended)**
+
+1. Grab the latest `tweetguard-x.y.z.zip` from [Releases](https://github.com/viewer12/tweetguard/releases) and **unzip** it into a permanent folder (don't delete it — the extension runs from there).
+2. Open `chrome://extensions` in Chrome / Edge / Brave.
+3. Enable **Developer mode** (top right).
+4. Click **Load unpacked** and select the unzipped folder.
+5. Open `x.com` — built-in rules are on by default.
+
+> Why not a double-click `.crx`? Chrome auto-disables `.crx` files from outside the Web Store for security, so "unzip + Load unpacked" is the most reliable sideload today.
+
+**Option B — clone the source (developers)**
 
 1. Clone the repo:
    ```bash
    git clone https://github.com/viewer12/tweetguard.git
    ```
-2. Open `chrome://extensions` in Chrome / Edge / Brave.
-3. Enable **Developer mode** (top right).
-4. Click **Load unpacked** and select the cloned directory.
-5. Open `x.com` — built-in rules are on by default.
+2. `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select the cloned directory.
 
 > After editing code, hit the **reload** icon on the extension in `chrome://extensions`, then refresh `x.com`.
 
