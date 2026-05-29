@@ -401,6 +401,17 @@
               <button id="gh-reset-disabled" class="btn btn-ghost" type="button" style="display:none;">重置已禁用</button>
               <span id="gh-status" style="color:var(--text-faint);font-size:12px;"></span>
             </div>
+
+            <div style="margin-top:14px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                <span style="font-size:12.5px;font-weight:600;color:var(--text-soft);">已加载的社区规则</span>
+                <span class="badge" id="gh-rules-count">0</span>
+                <span style="font-size:11.5px;color:var(--text-faint);">只读 · 不认可的可「否决」（本地不再用它判定，下次同步也不会恢复）</span>
+              </div>
+              <div class="learned-rules-list" id="gh-rules-list">
+                <div class="empty-state">尚未加载社区规则。点「立即同步」从上方仓库拉取。</div>
+              </div>
+            </div>
             <div class="card-section-desc" style="margin-top:8px;font-size:12px;">
               「贡献我的规则」把你本地学到的规则导出成社区格式（自动复制到剪贴板 + 下载文件），并打开上方仓库的 GitHub 提交页——内容不多时会直接预填，确认后提个 PR 即可，大家共享同一套规则库。
             </div>

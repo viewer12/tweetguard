@@ -76,6 +76,7 @@ function renderAll() {
   renderPrompt();
   renderRules();
   renderGithubSync();
+  renderGithubRules();
   renderLearnedRules();
   renderBadCases();
   renderCache();
@@ -250,6 +251,40 @@ function renderGithubSync() {
   else if (gs.lastSyncStatus === 'ok') status.textContent = `上次同步 ${formatRelative(gs.lastSyncAt)} · 已加载 ${cnt} 条社区规则${suffix}`;
   else if (typeof gs.lastSyncStatus === 'string' && gs.lastSyncStatus.startsWith('error')) status.textContent = `上次同步 ${formatRelative(gs.lastSyncAt)} 失败：${gs.lastSyncStatus.slice(6)}${suffix}`;
   else status.textContent = `上次同步 ${formatRelative(gs.lastSyncAt)}${suffix}`;
+}
+
+// 渲染从 GitHub 社区拉取的规则(只读)。不认可的可「否决」→ 写入 githubRulesDisabled，
+// 引擎里用户裁判优先于外部规则，且同步不覆盖否决清单，故否决持久有效。
+function renderGithubRules() {
+  const list = $('#gh-rules-list');
+  if (!list) return;
+  const rules = (config.githubRules || []).slice();
+  const disabled = new Set((config.githubRulesDisabled || []).map(v => String(v).toLowerCase()));
+  const countEl = $('#gh-rules-count'); if (countEl) countEl.textContent = rules.length;
+
+  if (rules.length === 0) {
+    list.innerHTML = `<div class="empty-state">尚未加载社区规则。点「立即同步」从上方仓库拉取。</div>`;
+    return;
+  }
+
+  // 未否决的排前，组内按关键词排序
+  rules.sort((a, b) => {
+    const da = disabled.has(String(a.value).toLowerCase()) ? 1 : 0;
+    const db = disabled.has(String(b.value).toLowerCase()) ? 1 : 0;
+    if (da !== db) return da - db;
+    return String(a.value || '').localeCompare(String(b.value || ''));
+  });
+
+  list.innerHTML = rules.map(rule => {
+    const off = disabled.has(String(rule.value).toLowerCase());
+    return `
+    <div class="gh-rule" data-value="${escapeHtml(rule.value)}" data-enabled="${off ? '0' : '1'}">
+      <span class="learned-rule-kind" data-origin="github" title="来自社区规则库（只读）">社区</span>
+      <span class="learned-rule-value" title="${escapeHtml(rule.value)}">${escapeHtml(rule.value)}</span>
+      <span class="learned-rule-category">${escapeHtml(CATEGORY_LABELS[rule.category] || rule.category || '可疑')}</span>
+      <button class="btn btn-ghost btn-sm gh-rule-toggle" type="button" data-action="${off ? 'restore' : 'veto'}">${off ? '恢复' : '否决'}</button>
+    </div>`;
+  }).join('');
 }
 
 // ── 已学习规则 ────────────────────────────────────────
@@ -875,6 +910,7 @@ function bindEvents() {
       if (r?.error) { if (status) status.textContent = '同步失败：' + r.error; }
       else { if (status) status.textContent = `同步成功 · 加载 ${r?.count ?? 0} 条`; }
       renderGithubSync();
+      renderGithubRules();
     } catch (err) {
       if (status) status.textContent = '同步失败：' + (err.message || err);
     }
@@ -883,6 +919,7 @@ function bindEvents() {
     config.githubRulesDisabled = [];
     await saveConfig();
     renderGithubSync();
+    renderGithubRules();
     showToast('已重置：社区规则禁用清单已清空');
   });
 
@@ -908,6 +945,22 @@ function bindEvents() {
       window.open(pre.length < 7000 ? pre : `https://github.com/${owner}/${repo}`, '_blank');
     }
     showToast(`已复制 + 下载 ${rules.length} 条规则；在打开的 GitHub 页确认 / 粘贴后提 PR 即可`);
+  });
+
+  // 社区规则「否决 / 恢复」——写入 githubRulesDisabled，裁判优先于外部规则，同步不覆盖
+  $('#gh-rules-list')?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.gh-rule-toggle');
+    if (!btn) return;
+    const value = btn.closest('.gh-rule')?.dataset.value;
+    if (!value) return;
+    if (!Array.isArray(config.githubRulesDisabled)) config.githubRulesDisabled = [];
+    const lc = value.toLowerCase();
+    const idx = config.githubRulesDisabled.findIndex(v => String(v).toLowerCase() === lc);
+    if (btn.dataset.action === 'veto') { if (idx < 0) config.githubRulesDisabled.push(value); }
+    else if (idx >= 0) config.githubRulesDisabled.splice(idx, 1);
+    await saveConfig();
+    renderGithubRules();
+    renderGithubSync();
   });
 
   // ── 名单 ──
