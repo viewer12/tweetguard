@@ -1,7 +1,7 @@
 // TweetGuard background service worker
 // 职责：代理 AI 提供商的网络请求（页面 CSP 不允许 inject.js 直接 fetch）
 
-import { DEFAULT_SYSTEM_PROMPT, BAD_CASE_REVIEW_PROMPT, DEFAULT_CONFIG, mergeConfig } from './defaults.js';
+import { DEFAULT_SYSTEM_PROMPT, BAD_CASE_REVIEW_PROMPT, DEFAULT_CONFIG, COMMUNITY_RULES_URL, mergeConfig } from './defaults.js';
 
 const SMOKE_TEST_CASES = [
   {
@@ -534,12 +534,7 @@ async function syncGithubRules(force = false) {
   const gs = cfg.githubSync || {};
   if (!force && !gs.enabled) return { skipped: true, reason: 'disabled' };
 
-  const url = (gs.rulesUrl || '').trim();
-  if (!url) {
-    cfg.githubSync = { ...gs, lastSyncAt: Date.now(), lastSyncStatus: 'error:未配置规则 URL' };
-    await chrome.storage.local.set({ config: cfg });
-    return { error: '未配置规则 URL' };
-  }
+  const url = COMMUNITY_RULES_URL;   // 固定内置地址，不走配置存储(避免被改/清空)
   try {
     const { rules } = await fetchAndValidateGithubRules(url);
     // 本地优先去重：剔除本地学习规则已覆盖的 value（本地删掉后下次同步会自动恢复）

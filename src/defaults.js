@@ -156,6 +156,9 @@ USER reports false_positive / previous_reasons contains a built-in rule (e.g. 'A
 → corrected_decision="normal", diagnosis="Built-in rule over-reaches on Asian users who use emoji-decorated display names. Rule should be deprioritized.", disable_rule_id=null  (built-in rule, can't auto-disable; log for developer)`;
 
 
+// 社区规则库地址 —— 固定内置常量，不暴露给用户编辑(它是官方共享库的固定地址)
+export const COMMUNITY_RULES_URL = 'https://raw.githubusercontent.com/viewer12/tweetguard/main/community-rules.json';
+
 export const DEFAULT_CONFIG = {
   version: 1,
   enabled: true,
@@ -192,8 +195,7 @@ export const DEFAULT_CONFIG = {
   githubRules: [],                   // 从 GitHub 社区仓库同步的规则（只读，source: 'github'）
 
   githubSync: {
-    enabled: true,                   // 默认开启，可在设置关闭
-    rulesUrl: 'https://raw.githubusercontent.com/viewer12/tweetguard/main/community-rules.json',
+    enabled: true,                   // 默认开启，可在设置关闭（地址固定见 COMMUNITY_RULES_URL）
     intervalHours: 24,
     lastSyncAt: 0,
     lastSyncStatus: '',              // '' | 'ok' | 'error:...'
@@ -374,10 +376,9 @@ export function mergeConfig(stored) {
     merged.ai.model = MODEL_MIGRATIONS[provider][oldModel];
   }
 
-  // 规则源地址迁移:旧占位库 viewer12/tweetguard-rules → 主仓库内的 community-rules.json
-  // (defaults 改了不会覆盖已存 config，必须显式迁移已保存的旧地址)
-  if (merged.githubSync?.rulesUrl && /tweetguard-rules\//.test(merged.githubSync.rulesUrl)) {
-    merged.githubSync.rulesUrl = DEFAULT_CONFIG.githubSync.rulesUrl;
+  // 地址已改为固定内置常量 COMMUNITY_RULES_URL，不再走配置存储；清掉历史遗留的 rulesUrl
+  if (merged.githubSync && 'rulesUrl' in merged.githubSync) {
+    delete merged.githubSync.rulesUrl;
   }
 
   return merged;

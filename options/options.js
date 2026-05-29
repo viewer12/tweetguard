@@ -2,7 +2,7 @@ import {
   DEFAULT_CONFIG, DEFAULT_SYSTEM_PROMPT, BAD_CASE_REVIEW_PROMPT,
   PROVIDERS, CATEGORY_LABELS,
   SENSITIVITY_THRESHOLDS, mergeConfig,
-  HARD_RULES, SCORING_SIGNALS
+  HARD_RULES, SCORING_SIGNALS, COMMUNITY_RULES_URL
 } from '../src/defaults.js';
 
 // Prompt 编辑器配置 —— 用同一组 UI 编辑两个 prompt
@@ -239,7 +239,7 @@ function renderRules() {
 function renderGithubSync() {
   const gs = config.githubSync || {};
   const en = $('#gh-enabled'); if (en) en.checked = gs.enabled !== false;
-  const url = $('#gh-url'); if (url && document.activeElement !== url) url.value = gs.rulesUrl || '';
+  const src = $('#gh-src'); if (src) src.textContent = COMMUNITY_RULES_URL;
   const disabledN = (config.githubRulesDisabled || []).length;
   const resetBtn = $('#gh-reset-disabled'); if (resetBtn) resetBtn.style.display = disabledN > 0 ? '' : 'none';
   const status = $('#gh-status');
@@ -864,11 +864,7 @@ function bindEvents() {
     config.githubSync.enabled = e.target.checked;
     scheduleSave();
   });
-  $('#gh-url')?.addEventListener('change', (e) => {
-    if (!config.githubSync) config.githubSync = {};
-    config.githubSync.rulesUrl = e.target.value.trim();
-    scheduleSave();
-  });
+  // 社区规则地址已固定内置(COMMUNITY_RULES_URL)，不再提供编辑入口
   $('#gh-sync-now')?.addEventListener('click', async () => {
     const status = $('#gh-status');
     if (status) status.textContent = '同步中…';
@@ -904,7 +900,7 @@ function bindEvents() {
     const a = document.createElement('a'); a.href = url; a.download = 'tweetguard-rules-contribution.json'; a.click();
     URL.revokeObjectURL(url);
     // 从同步 URL 推导仓库，直达 GitHub「新建文件」提交页(内容短则预填，长则打开仓库由你粘贴)
-    const m = (config.githubSync?.rulesUrl || '').match(/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\//);
+    const m = COMMUNITY_RULES_URL.match(/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\//);
     if (m) {
       const [, owner, repo, branch] = m;
       const fname = `contributions/${Date.now()}.json`;
