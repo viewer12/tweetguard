@@ -611,7 +611,7 @@
     rule.enabled = false;
     rule.disabledAt = Date.now();
     rule.disabledReason = 'user_feedback';
-    postToContent({ type: 'save-config', data: { learnedRules: config.learnedRules } });
+    postToContent({ type: 'patch-learned-rule', id: ruleId, patch: { enabled: false, disabledAt: rule.disabledAt, disabledReason: 'user_feedback' } });
     return true;
   }
 
@@ -647,8 +647,11 @@
       origin: origin || 'auto',     // 'auto' = AI 浏览时自动蒸馏；'feedback' = 用户标记垃圾后触发
       hitCount: 0
     };
-    config.learnedRules.push(rule);
-    postToContent({ type: 'save-config', data: { learnedRules: config.learnedRules } });
+    config.learnedRules.push(rule);   // 内存乐观更新：本条立即可用于后续匹配
+    // 持久化走单条原子 append：content.js 串行、基于最新 storage 追加去重。
+    // 不再 save 整个数组——推文流里 setCache/stats 高频触发 config-update 会把内存
+    // 数组整体覆盖，导致并发自动学到的规则在落盘前被冲掉（自动复审规则全部丢失的根因）。
+    postToContent({ type: 'add-learned-rule', rule });
   }
 
   // 命中次数 debounce flush（避免每命中就 setStorage）
@@ -661,17 +664,20 @@
       hitFlushTimer = null;
       if (!config.learnedRules) { pendingHits.clear(); return; }
       let changed = false;
+      const hits = {};
       for (const [id, delta] of pendingHits) {
         const rule = config.learnedRules.find(r => r.id === id);
         if (rule) {
-          rule.hitCount = (rule.hitCount || 0) + delta;
+          rule.hitCount = (rule.hitCount || 0) + delta;   // 内存乐观更新
           rule.lastHitAt = Date.now();
           changed = true;
+          hits[id] = delta;
         }
       }
       pendingHits.clear();
       if (changed) {
-        postToContent({ type: 'save-config', data: { learnedRules: config.learnedRules } });
+        // 原子累加命中数（content.js 基于最新 storage 改），避免整体覆盖冲掉并发新增
+        postToContent({ type: 'bump-learned-hits', hits });
       }
     }, 5000);
   }
