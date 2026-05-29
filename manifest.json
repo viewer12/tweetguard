@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TweetGuard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "优雅地过滤 X 信息流中的垃圾号、营销号和色情 bot",
   "background": {
     "service_worker": "src/background.js",
