@@ -91,48 +91,58 @@
     try {
     switch (msg.type) {
       case 'save-config': {
-        const current = await chrome.storage.local.get('config');
-        const merged = deepMerge(current.config || {}, msg.data);
-        await chrome.storage.local.set({ config: merged });
+        await withConfigLock(async () => {
+          const current = await chrome.storage.local.get('config');
+          const merged = deepMerge(current.config || {}, msg.data);
+          await chrome.storage.local.set({ config: merged });
+        });
         break;
       }
 
-      // ── learnedRules 原子写：串行处理 + 基于最新 storage 读改写，避免被 config-update 整体覆盖冲掉 ──
+      // ── learnedRules 原子写：经过 withConfigLock 串行化，避免与 save-badcase / update-stats /
+      //    save-config 并发各自 get→set 时互相覆盖（自动复审同步连发 add-learned-rule + save-badcase
+      //    是高发竞态点：后写者基于旧 cfg set，把先写者刚加的规则冲掉）
       case 'add-learned-rule': {
-        const { config: cfg = {} } = await chrome.storage.local.get('config');
-        if (!Array.isArray(cfg.learnedRules)) cfg.learnedRules = [];
-        const rule = msg.rule;
-        if (rule && rule.value) {
-          const lc = String(rule.value).toLowerCase();
-          const dup = cfg.learnedRules.some(r => r.kind === rule.kind && String(r.value).toLowerCase() === lc);
-          if (!dup) {
-            cfg.learnedRules.push(rule);
-            await chrome.storage.local.set({ config: cfg });
+        await withConfigLock(async () => {
+          const { config: cfg = {} } = await chrome.storage.local.get('config');
+          if (!Array.isArray(cfg.learnedRules)) cfg.learnedRules = [];
+          const rule = msg.rule;
+          if (rule && rule.value) {
+            const lc = String(rule.value).toLowerCase();
+            const dup = cfg.learnedRules.some(r => r.kind === rule.kind && String(r.value).toLowerCase() === lc);
+            if (!dup) {
+              cfg.learnedRules.push(rule);
+              await chrome.storage.local.set({ config: cfg });
+            }
           }
-        }
+        });
         break;
       }
       case 'patch-learned-rule': {
-        const { config: cfg = {} } = await chrome.storage.local.get('config');
-        const rule = (cfg.learnedRules || []).find(r => r.id === msg.id);
-        if (rule) {
-          Object.assign(rule, msg.patch || {});
-          await chrome.storage.local.set({ config: cfg });
-        }
+        await withConfigLock(async () => {
+          const { config: cfg = {} } = await chrome.storage.local.get('config');
+          const rule = (cfg.learnedRules || []).find(r => r.id === msg.id);
+          if (rule) {
+            Object.assign(rule, msg.patch || {});
+            await chrome.storage.local.set({ config: cfg });
+          }
+        });
         break;
       }
       case 'bump-learned-hits': {
-        const { config: cfg = {} } = await chrome.storage.local.get('config');
-        let changed = false;
-        for (const [id, delta] of Object.entries(msg.hits || {})) {
-          const rule = (cfg.learnedRules || []).find(r => r.id === id);
-          if (rule) {
-            rule.hitCount = (rule.hitCount || 0) + delta;
-            rule.lastHitAt = Date.now();
-            changed = true;
+        await withConfigLock(async () => {
+          const { config: cfg = {} } = await chrome.storage.local.get('config');
+          let changed = false;
+          for (const [id, delta] of Object.entries(msg.hits || {})) {
+            const rule = (cfg.learnedRules || []).find(r => r.id === id);
+            if (rule) {
+              rule.hitCount = (rule.hitCount || 0) + delta;
+              rule.lastHitAt = Date.now();
+              changed = true;
+            }
           }
-        }
-        if (changed) await chrome.storage.local.set({ config: cfg });
+          if (changed) await chrome.storage.local.set({ config: cfg });
+        });
         break;
       }
 
@@ -185,10 +195,12 @@
       }
 
       case 'update-stats': {
-        const current = await chrome.storage.local.get('config');
-        const config = current.config || {};
-        config.stats = deepMerge(config.stats || {}, msg.data);
-        await chrome.storage.local.set({ config });
+        await withConfigLock(async () => {
+          const current = await chrome.storage.local.get('config');
+          const config = current.config || {};
+          config.stats = deepMerge(config.stats || {}, msg.data);
+          await chrome.storage.local.set({ config });
+        });
         break;
       }
 
@@ -264,12 +276,14 @@
       }
 
       case 'save-badcase': {
-        const current = await chrome.storage.local.get('config');
-        const config = current.config || {};
-        config.badCases = config.badCases || [];
-        config.badCases.unshift(msg.entry);     // 最新的排前面
-        if (config.badCases.length > 100) config.badCases.length = 100;
-        await chrome.storage.local.set({ config });
+        await withConfigLock(async () => {
+          const current = await chrome.storage.local.get('config');
+          const config = current.config || {};
+          config.badCases = config.badCases || [];
+          config.badCases.unshift(msg.entry);     // 最新的排前面
+          if (config.badCases.length > 100) config.badCases.length = 100;
+          await chrome.storage.local.set({ config });
+        });
         break;
       }
     }
@@ -280,6 +294,19 @@
       console.warn('[TweetGuard] handler error:', err);
     }
   });
+
+  // ── 全局 config 写入锁:所有 chrome.storage.local 上 config 这个 key 的 get→改→set
+  //    都必须经过这个锁排队执行,避免并发 await 互相覆盖(救命用,别去掉)。
+  //    cache 是独立 key,不参与本锁;但 config.stats / config.badCases / config.learnedRules
+  //    都同 key、全部经此锁。
+  let __configWriteLock = Promise.resolve();
+  function withConfigLock(fn) {
+    const next = __configWriteLock.then(fn, fn).catch(e => {
+      if (!isContextInvalidatedError(e)) console.warn('[TweetGuard] config-lock task error:', e);
+    });
+    __configWriteLock = next;
+    return next;
+  }
 
   function deepMerge(target, source) {
     const out = Array.isArray(target) ? [...target] : { ...target };
