@@ -68,10 +68,11 @@
   }
 
   // 规则版本号：bump 此值会令旧版规则下"判为正常"的缓存全部失效（spam 缓存保留）
+  // V8: 显示名硬规则仅保留 R7 / R10；R4 / R6 降级为评分；显示名评分(N1/N2/A2/Combo)整体降权
   // V7: AI 学习规则只允许 tweet_keyword（移除 displayname_keyword / displayname_regex）
   // V6: 完全移除 username 维度判定（A1/A6/A7/N3 + R2/R8/R9/R11 + AI 禁止学 username_regex）
   // V5: A1 进一步弱化 + 自动禁用过宽 learned regex / V4: verified 保护 + 弱化 A1/N3
-  const RULES_VERSION = 7;
+  const RULES_VERSION = 8;
 
   const SENSITIVITY = {
     // aiTrigger: L0 分数 ≥ 此值才进灰区调 AI
@@ -114,7 +115,8 @@
       /资\s*源\s*[分有看]/,
       /(嫩\s*妹|学\s*妹|空\s*姐|护\s*士)/,
       /大\s*胆\s*[露漏]/,
-      /\d+\s*[岁y]\s*[找寻约]/
+      /\d+\s*[岁y]\s*[找寻约]/,
+      /破\s*处/, /包\s*养/, /援\s*交/, /楼\s*凤/   // 高置信引流词（含本次"免费破处"），正常显示名几乎不会出现，误伤极低
     ],
     cn_nsfw_strong: [
       /(寂寞|无聊|空闲|在家)\s*([找想等])/,
@@ -291,6 +293,12 @@
 
   // ===========================================================================
   // §4 L0 规则评分引擎
+  //
+  // ⚠️ 配置页同步契约：本函数的硬规则(hard:true 分支)与评分信号(score += 分支)
+  //    在 src/defaults.js 里有一份「展示镜像」HARD_RULES / SCORING_SIGNALS，供
+  //    options「规则与权重」页渲染。本文件是 page-context 脚本，无法 import 该模块，
+  //    两边是手工同步关系——每次在此增删 / 调整规则或信号，务必同步更新 defaults.js，
+  //    否则配置页会重新出现「幽灵规则」(参见 defaults.js 中同名常量上方的注释)。
   // ===========================================================================
 
   function evaluateL0(data) {
@@ -310,9 +318,11 @@
     const followed = config.followingList?.some(h => h.toLowerCase() === data.handle);
     if (followed) score -= 100;
 
-    // ============ 硬规则（直接 100） ============
-    // 注：V6 起所有硬规则只能基于 displayName / 推文内容 / 上下文，不允许基于 handle
-    // 已移除：R2 (NSFW handle + ...) / R8 (...+ handle) / R9 (...+ handle) / R11 (...+ handle)
+    // ============ 硬规则（直接 100，命中即定案）============
+    // 产品约束（V8）：
+    //   · 显示名硬规则仅允许 R7 / R10 两条；其余显示名判断一律走评分并降权
+    //   · username / handle 不作为任何判定维度（仅用于黑 / 白名单的精确匹配）
+    // 历史：V6 移除 R2 / R8 / R9 / R11（均基于 handle）；V8 降级 R4 / R6（显示名）→ 评分
 
     // R7: CN NSFW 显示名 killer
     if (enabledModules.cn_nsfw_bot && RX.cn_nsfw_killer.some(r => r.test(data.displayName))) {
@@ -333,16 +343,9 @@
     const isFullName = RX.western_full_name.test(data.displayName.trim());
     const segments = data.displayName.split(RX.separator_emoji).map(s => s.trim()).filter(Boolean);
 
-    // R4: OnlyFans/Fansly in displayName + reply
-    if (enabledModules.nsfw && /onlyfans|fansly|chaturbate/i.test(data.displayName) && data.isReply) {
-      return { score: 100, hide: true, hard: true, category: 'nsfw_solicitation', reasons: ['R4: OnlyFans/Fansly in display name + reply'] };
-    }
-    // R6: 4+ NSFW emoji in display name
-    const nsfwEmojiCount = (data.displayName.match(new RegExp(RX.nsfw_emoji.source, 'gu')) || []).length;
-    if (enabledModules.nsfw && nsfwEmojiCount >= 4) {
-      return { score: 100, hide: true, hard: true, category: 'nsfw_solicitation', reasons: ['R6: 4+ NSFW emoji in display name'] };
-    }
-    // R3: pump.fun 链接 + reply
+    // 注：原 R4(OnlyFans 显示名 + 回复)/ R6(4+ NSFW emoji 显示名)已从硬规则【降级为评分信号】
+    //     （见下方评分区）。产品约束：显示名硬规则仅允许 R7 / R10。
+    // R3: pump.fun 链接 + reply（唯一保留的「内容类」硬规则）
     if (enabledModules.crypto_shill && /pump\.fun\/[a-zA-Z0-9]{20,}/.test(data.tweetText) && data.isReply) {
       return { score: 100, hide: true, hard: true, category: 'crypto_shill', reasons: ['R3: pump.fun link + reply'] };
     }
@@ -352,11 +355,11 @@
 
     // —— N1: CN NSFW 显示名（非 killer 等级）已经在 R7 处理；此处加 strong
     if (enabledModules.cn_nsfw_bot && RX.cn_nsfw_strong.some(r => r.test(data.displayName))) {
-      score += 30; reasons.push('N1 cn_nsfw_strong'); category = 'cn_nsfw_bot';
+      score += 18; reasons.push('N1 cn_nsfw_strong (displayname, downweighted)'); category = 'cn_nsfw_bot';
     }
     // —— N2: 分隔符模式 ——
     if (enabledModules.cn_nsfw_bot && segments.length >= 3) {
-      score += 35; reasons.push('N2 separator-pattern displayname');
+      score += 20; reasons.push('N2 separator-pattern displayname (downweighted)');
       if (category === 'normal') category = 'cn_nsfw_bot';
     }
     // V6 已移除 N3（基于 handle 判定不可靠）
@@ -376,27 +379,38 @@
     // 仅靠 "full name displayName + 多簇 emoji 纯 emoji 推文" 两个内容信号
     // 比 V5 弱（之前还有 handle 锚定）但避免误伤
     if (enabledModules.cn_nsfw_bot && isFullName && nearPureEmoji && multiClusterEmoji) {
-      score += 20;
-      reasons.push('Combo: western full-name + multi-cluster emoji-only tweet');
+      score += 12;
+      reasons.push('Combo: western full-name + multi-cluster emoji-only tweet (downweighted)');
       if (category === 'normal') category = 'bot_farm';
     }
 
     // V6 已移除 A1 / A6 / A7（全部基于 handle 判定）
     // 这些信号被反复证明对亚洲用户高假阳性。如果未来要恢复，必须先解决"handle 不可靠"的根本问题
 
-    // —— A2 显示名 emoji 灌水（修复后逻辑）——
+    // —— A2 显示名 emoji 灌水（显示名维度，已整体降权）——
     const displayEmojiCount = (data.displayName.match(RX.emoji_match) || []).length;
+    const nsfwEmojiCount = (data.displayName.match(new RegExp(RX.nsfw_emoji.source, 'gu')) || []).length;
     let a2 = 0;
-    if (displayEmojiCount >= 4) a2 = 18;
-    if (displayEmojiCount >= 6) a2 = 25;
+    if (displayEmojiCount >= 4) a2 = 12;
+    if (displayEmojiCount >= 6) a2 = 16;
     const cryptoEmojiCount = (data.displayName.match(new RegExp(RX.crypto_emoji.source, 'gu')) || []).length;
-    if (cryptoEmojiCount >= 2) a2 = Math.max(a2, 15);
-    if (RX.nsfw_emoji.test(data.displayName)) a2 = Math.max(a2, 30);
-    // CJK 减权：只对非分隔符模式且无 NSFW emoji 时生效
-    if (a2 > 0 && RX.cjk.test(data.displayName) && segments.length < 3 && !RX.nsfw_emoji.test(data.displayName)) {
+    if (cryptoEmojiCount >= 2) a2 = Math.max(a2, 10);
+    // CJK 减权：显示名含 CJK 且非分隔符模式时减半（亚洲用户显示名 emoji 很常见）
+    if (a2 > 0 && RX.cjk.test(data.displayName) && segments.length < 3) {
       a2 *= 0.5;
     }
     if (a2 > 0) { score += a2; reasons.push(`A2 displayname emoji (${a2.toFixed(0)})`); }
+
+    // —— R4(降级自硬规则)：显示名含 OnlyFans/Fansly + 回复（显示名维度，不再一票否决）——
+    if (enabledModules.nsfw && /onlyfans|fansly|chaturbate/i.test(data.displayName) && data.isReply) {
+      score += 35; reasons.push('R4 OnlyFans/Fansly in display name + reply (downgraded)');
+      if (category === 'normal') category = 'nsfw_solicitation';
+    }
+    // —— R6(降级自硬规则)：显示名含 4+ NSFW emoji（显示名维度，不再一票否决）——
+    if (enabledModules.nsfw && nsfwEmojiCount >= 4) {
+      score += 25; reasons.push('R6 4+ NSFW emoji in display name (downgraded)');
+      if (category === 'normal') category = 'nsfw_solicitation';
+    }
 
     // —— B1 crypto shill ——
     if (enabledModules.crypto_shill) {
@@ -598,7 +612,11 @@
 
   // 命中检查
   function matchLearnedRules(data) {
-    const rules = config.learnedRules || [];
+    // 学习规则 + GitHub 社区规则一起匹配(两者都只含 tweet_keyword，安全闸门一致)
+    // 用户「信任」否决过的社区规则(githubRulesDisabled)在此剔除——用户裁判优先于外部规则
+    const ghDisabled = new Set((config.githubRulesDisabled || []).map(v => String(v).toLowerCase()));
+    const github = (config.githubRules || []).filter(r => !ghDisabled.has(String(r.value || '').toLowerCase()));
+    const rules = (config.learnedRules || []).concat(github);
     if (!rules.length) return null;
 
     const dnLower = data.displayName.toLowerCase();
@@ -637,7 +655,7 @@
     return true;
   }
 
-  function addLearnedRule(signature, sourceHandle, sourceCategory) {
+  function addLearnedRule(signature, sourceHandle, sourceCategory, origin) {
     if (!signature || !signature.kind || !signature.value) return;
     // V7: 防御层 —— 即使 background 校验被绕过，inject 这里也再拒一次
     if (signature.kind !== 'tweet_keyword') return;
@@ -666,6 +684,7 @@
       enabled: true,
       createdAt: Date.now(),
       sourceHandle: sourceHandle || '',
+      origin: origin || 'auto',     // 'auto' = AI 浏览时自动蒸馏；'feedback' = 用户标记垃圾后触发
       hitCount: 0
     };
     config.learnedRules.push(rule);
@@ -705,9 +724,12 @@
     if (!handle) return null;
     const entry = cache[handle];
     if (!entry) return null;
-    // 旧规则版本下的 "normal" 判定可能漏判（规则改进过）→ 失效让它重新走 L0
-    // SPAM 判定永久保留：bot 几乎不会自我洗白，且 AI 已经盖章
-    if (entry.decision === 'normal' && (entry.rulesVersion || 0) < RULES_VERSION) {
+    // 旧规则版本下的判定可能不再适用 → 失效重评：
+    //   · normal：规则可能变严，之前漏判的要重评
+    //   · rule 来源的 spam：规则可能变宽（如 V8 降级 R4/R6），之前被规则误杀的要重评
+    //   · AI / user 来源的 spam 永久保留（已被 AI 或用户明确盖章，不随规则版本失效）
+    const staleVersion = (entry.rulesVersion || 0) < RULES_VERSION;
+    if (staleVersion && (entry.decision === 'normal' || entry.source === 'rule')) {
       delete cache[handle];
       return null;
     }
@@ -771,6 +793,22 @@
     });
   }
 
+  // 按账号去重的 AI 调用：同一 handle 的多条推文(线程 / 集体感染场景很常见)若同时
+  // 进入灰区，只发一次请求，其余复用同一 Promise。判定本就是账号级(缓存按 handle)，
+  // 结果一致、零质量损失，纯省掉重复调用 —— 符合「不为省次数牺牲效果」。
+  const inflightAIByHandle = new Map();
+  function callAIDedup(handle, input) {
+    if (handle && inflightAIByHandle.has(handle)) {
+      return inflightAIByHandle.get(handle);
+    }
+    const p = callAI(input);
+    if (handle) {
+      inflightAIByHandle.set(handle, p);
+      p.finally(() => inflightAIByHandle.delete(handle));
+    }
+    return p;
+  }
+
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
     const msg = e.data;
@@ -804,6 +842,8 @@
     if (JSON.stringify(oldC.customKeywords || []) !== JSON.stringify(newC.customKeywords || [])) return true;
     // 学习规则：只比较模式与启用状态，忽略 hitCount/lastHitAt 噪音
     if (!sameLearnedRules(oldC.learnedRules, newC.learnedRules)) return true;
+    if (!sameLearnedRules(oldC.githubRules, newC.githubRules)) return true;   // GitHub 规则同步后重评
+    if (JSON.stringify(oldC.githubRulesDisabled || []) !== JSON.stringify(newC.githubRulesDisabled || [])) return true;
     // hideMode 变化由 CSS 自动处理（attribute selector），不需要重评
     // stats / cache 变化更不需要重评
     return false;
@@ -902,7 +942,8 @@
     const prevCategory = article.getAttribute('data-tg-category') || null;
     const prevSource = article.getAttribute('data-tg-source') || null;
     const cached = cache[data.handle];
-    const previousLearnedRuleHit = cached?.reasoning?.match(/Learned rule \[.*?\]: (.+)/)?.[1] || null;
+    // 兼容缓存里两种 reasoning 格式：`Learned rule: value` 与 `Learned rule [kind]: value`
+    const previousLearnedRuleHit = cached?.reasoning?.match(/Learned rule(?: \[[^\]]*\])?:\s*(.+)$/)?.[1]?.trim() || null;
     // 找 learnedRule id（如果命中过）
     let learnedRuleId = null;
     if (previousLearnedRuleHit && config.learnedRules) {
@@ -948,11 +989,24 @@
         const ruleObj = config.learnedRules?.find(r => r.id === learnedRuleId);
         autoDisabledRule = ruleObj ? `${ruleObj.kind}: ${ruleObj.value}` : learnedRuleId;
       }
+    } else if (userVerdict === 'normal' && previousLearnedRuleHit) {
+      // 本地学习规则里找不到 → 很可能是 GitHub 社区规则命中导致的误判。
+      // 把该 value 加入「本地禁用清单」：matchLearnedRules 会剔除它，且 background 每次同步
+      // 只覆盖 githubRules、绝不动 githubRulesDisabled，故用户的否决持久有效。
+      const gh = (config.githubRules || []).find(r => r.value === previousLearnedRuleHit);
+      if (gh) {
+        if (!config.githubRulesDisabled) config.githubRulesDisabled = [];
+        if (!config.githubRulesDisabled.includes(gh.value)) {
+          config.githubRulesDisabled.push(gh.value);
+          postToContent({ type: 'save-config', data: { githubRulesDisabled: config.githubRulesDisabled } });
+          autoDisabledRule = `社区规则: ${gh.value}`;
+        }
+      }
     }
     if (userVerdict === 'spam') {
       repeatSig = findRepeatPattern(data.tweetText, data.handle, config.badCases || []);
       if (repeatSig) {
-        addLearnedRule(repeatSig, data.handle, repeatSig.category);
+        addLearnedRule(repeatSig, data.handle, repeatSig.category, 'feedback');
       }
     }
 
@@ -966,7 +1020,29 @@
       showInPageToast(`${verdictText}${config.ai?.enabled ? '，AI 正在分析...' : ''}`);
     }
 
-    // 5. 后台请 AI 复审（仅在 AI 启用时）
+    // 5a. 本地已确定性修复(FN 命中跨账号重复模式 / FP 定位到闯祸规则)→ 跳过 AI 复审
+    //     规则已加好 / 禁好，AI 复审只是冗余的二次确认。只跳过「本地已能处理」的情况；
+    //     本地处理不了的仍会照常调 AI(见 5b)，不牺牲过滤效果。
+    const localFixApplied = (userVerdict === 'spam' && repeatSig) ||
+                            (userVerdict === 'normal' && autoDisabledRule);
+    if (localFixApplied) {
+      saveBadCaseEntry({
+        id: 'bc-' + Date.now().toString(36),
+        type: userVerdict === 'spam' ? 'false_negative' : 'false_positive',
+        handle: data.handle,
+        displayName: data.displayName,
+        tweetText: data.tweetText.slice(0, 300),
+        userVerdict,
+        previousDecision: prevTg === 'hide' ? 'spam' : (prevTg === 'ok' || prevTg === 'reveal') ? 'normal' : 'unevaluated',
+        previousCategory: prevCategory,
+        previousSource: prevSource,
+        capturedAt: Date.now(),
+        aiAnalysis: { localFix: true, note: '本地确定性修复，已跳过 AI 复审' }
+      });
+      return;
+    }
+
+    // 5b. 后台请 AI 复审（仅在 AI 启用时）
     if (!config.ai?.enabled || (!config.ai.apiKey && config.ai.provider !== 'ollama')) {
       // 不调 AI 也至少把 bad case 入档
       saveBadCaseEntry({
@@ -1031,7 +1107,7 @@
       // 应用 AI 复审建议
       const actions = [];
       if (result.add_signature) {
-        addLearnedRule(result.add_signature, data.handle, result.category);
+        addLearnedRule(result.add_signature, data.handle, result.category, 'feedback');
         actions.push('新增规则');
       }
       if (result.disable_rule_id && !autoDisabledRule) {
@@ -1212,7 +1288,10 @@
       e.stopPropagation();
       e.preventDefault();
       if (btn.classList.contains('tg-bc-reveal')) {
-        applyReveal(article);
+        // 切换 展开 / 收起：展开后再点即可重新折叠
+        const revealed = article.getAttribute('data-tg') === 'reveal';
+        article.setAttribute('data-tg', revealed ? 'hide' : 'reveal');
+        btn.textContent = revealed ? '显示' : '收起';
       } else if (btn.classList.contains('tg-bc-trust')) {
         // 「信任」= 标记为误判（false positive）→ 触发 AI 复审 + 学习
         markAsBadCase(article, 'normal');
@@ -1325,15 +1404,28 @@
       }
     }
 
-    // Step 1.5: AI 之前学到的规则（L0 增强层）
-    const learnedHit = matchLearnedRules(data);
+    // Step 1.2: 用户名单优先于一切规则（fail-open 底线）
+    //   白名单 = 最高保护：任何规则——尤其外部社区规则——都不得隐藏你信任的人
+    //   黑名单 = 强制隐藏
+    //   关注的人 = 跳过「命中即隐藏」的规则匹配，改走 Step 2 评分体系的 -100 缓冲
+    if (data.handle) {
+      if (config.whitelist?.some(h => h.toLowerCase() === data.handle)) { applyOk(article); return; }
+      if (config.blacklist?.some(h => h.toLowerCase() === data.handle)) {
+        applyHide(article, { handle: data.handle, category: 'bot_farm', reasoning: 'blacklisted' }, 'rule');
+        return;
+      }
+    }
+    const isFollowedUser = !!(data.handle && config.followingList?.some(h => h.toLowerCase() === data.handle));
+
+    // Step 1.5: AI 学到的 + GitHub 社区规则（命中即隐藏）——关注的人跳过，让评分体系的缓冲生效
+    const learnedHit = isFollowedUser ? null : matchLearnedRules(data);
     if (learnedHit) {
       applyHide(article, {
         handle: data.handle,
         category: learnedHit.category,
-        reasoning: `Learned rule [${learnedHit.kind}]: ${learnedHit.value}`
+        reasoning: (learnedHit.source === 'github' ? '[社区] ' : '') + `Learned rule [${learnedHit.kind}]: ${learnedHit.value}`
       }, 'rule');
-      bumpLearnedRuleHit(learnedHit.id);
+      if (learnedHit.source !== 'github') bumpLearnedRuleHit(learnedHit.id);  // 社区规则不计本地命中数
       // 高分写缓存，下次同 handle 直接缓存命中
       if (data.handle) {
         setCache(data.handle, {
@@ -1390,7 +1482,7 @@
     if (aiEnabled && isGrayZone) {
       applyPending(article);
       const aiInput = buildAIInput(data, l0);
-      const result = await callAI(aiInput);
+      const result = await callAIDedup(data.handle, aiInput);
       if (!result || result.error || result.skipped) {
         // AI 失败 → fail-open，按 L0 决策
         if (l0.blur) {
@@ -1407,9 +1499,27 @@
           reasoning: result.reasoning
         }, 'ai');
         setCache(data.handle, result, 'ai', data.displayName);
-        // 关键：AI 顺手蒸馏出来的规则，落库供未来 L0 直接命中
+        // AI 顺手蒸馏的规则落库；若分类没吐 signature → 用「复审 prompt」自动复审一次沉淀规则
+        // (把这次 AI 判定当作 L0 漏判的 false_negative，复用用户可见可改的同一套复审 prompt，不另起炉灶)
         if (result.signature) {
-          addLearnedRule(result.signature, data.handle, result.category);
+          addLearnedRule(result.signature, data.handle, result.category, 'auto');
+        } else {
+          callAIReview({
+            type: 'false_negative',
+            user_says: 'spam',
+            previous_decision: 'normal',
+            previous_reasons: l0.reasons || [],
+            previous_learned_rule_hit: null,
+            input: {
+              display_name: data.displayName.slice(0, 100),
+              handle: data.handle,
+              verified: data.verified,
+              tweet_text: data.tweetText.slice(0, 500),
+              is_reply: data.isReply
+            }
+          }).then(rev => {
+            if (rev && rev.add_signature) addLearnedRule(rev.add_signature, data.handle, result.category, 'auto');
+          });
         }
       } else {
         applyOk(article);
@@ -1442,6 +1552,100 @@
   // §9 MutationObserver + 路由变化
   // ===========================================================================
 
+  // —— 关注列表自动同步 ——
+  //    修复:此前 followingList 只被 evaluateL0 读取 / 选项页手动编辑,从无自动填充逻辑
+  //    （defaults.js 注释「用户访问 following 页时填充」是空头支票）。
+  //    现在:用户访问【自己的】/following 页时,随无限滚动增量抓取 UserCell 的 handle。
+  function getCurrentUserHandle() {
+    // 侧边栏「个人资料」链接的 href 即当前登录用户
+    const link = document.querySelector('[data-testid="AppTabBar_Profile_Link"]');
+    const m = (link?.getAttribute('href') || '').match(/^\/([A-Za-z0-9_]+)$/);
+    return m ? m[1].toLowerCase() : null;
+  }
+  function isOwnFollowingPage() {
+    // 仅在「自己的」/following 页抓取,避免把别人关注的人误并入自己的关注列表
+    const m = location.pathname.match(/^\/([A-Za-z0-9_]+)\/following$/i);
+    if (!m) return false;
+    const current = getCurrentUserHandle();
+    return !!current && m[1].toLowerCase() === current;
+  }
+  const RESERVED_PATHS = /^(home|explore|notifications|messages|i|settings|search|compose|bookmarks|following|followers)$/i;
+  function scanFollowingPage() {
+    if (!isOwnFollowingPage()) return;
+    const cells = document.querySelectorAll('[data-testid="UserCell"]');
+    if (!cells.length) return;
+    if (!config.followingList) config.followingList = [];
+    const existing = new Set(config.followingList.map(h => String(h).toLowerCase()));
+    let added = 0;
+    for (const cell of cells) {
+      let handle = null;
+      for (const a of cell.querySelectorAll('a[href^="/"]')) {
+        const m = (a.getAttribute('href') || '').match(/^\/([A-Za-z0-9_]+)$/);
+        if (m && !RESERVED_PATHS.test(m[1])) { handle = '@' + m[1].toLowerCase(); break; }
+      }
+      if (!handle || existing.has(handle)) continue;
+      existing.add(handle); config.followingList.push(handle); added++;
+    }
+    if (added > 0) {
+      postToContent({ type: 'save-config', data: { followingList: config.followingList } });
+      showInPageToast(`TweetGuard：已同步 ${added} 个关注账号（共 ${config.followingList.length}）`);
+    }
+  }
+  let followingSyncTimer = null;
+  function scheduleFollowingSync() {
+    if (!isOwnFollowingPage() || followingSyncTimer) return;
+    followingSyncTimer = setTimeout(() => { followingSyncTimer = null; scanFollowingPage(); }, 600);
+  }
+
+  // —— 一键自动同步：替用户滚到底、边滚边抓（用 X 自己的加载机制，不逆向接口）——
+  function tgSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  let autoSyncing = false, autoSyncStop = false, followSyncBtn = null;
+
+  async function autoSyncFollowing() {
+    if (!isOwnFollowingPage()) { showInPageToast('请在你自己的「正在关注」页使用'); return; }
+    if (autoSyncing) { autoSyncStop = true; return; }   // 同步中再次点击 = 停止
+    autoSyncing = true; autoSyncStop = false;
+    updateFollowSyncBtn();
+    scanFollowingPage();
+    let stable = 0, lastCount = (config.followingList || []).length, lastH = 0;
+    // 连续 4 轮「数量 + 页面高度」都不变 → 判定到底；最多 800 轮兜底防死循环
+    for (let i = 0; i < 800 && stable < 4 && !autoSyncStop; i++) {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+      await tgSleep(750);                               // 给 X 加载下一页留时间，节奏温和避免风控
+      scanFollowingPage();
+      const c = (config.followingList || []).length;
+      const h = document.documentElement.scrollHeight;
+      if (c === lastCount && h === lastH) stable++; else stable = 0;
+      lastCount = c; lastH = h;
+      updateFollowSyncBtn(c);
+    }
+    autoSyncing = false; autoSyncStop = false;
+    scanFollowingPage();
+    updateFollowSyncBtn();
+    showInPageToast(`关注同步完成 · 共 ${(config.followingList || []).length} 个`);
+  }
+
+  // 自己的 /following 页右下角浮一个「一键同步」按钮；离开页面自动移除
+  function ensureFollowSyncButton() {
+    if (!isOwnFollowingPage()) {
+      if (followSyncBtn) { followSyncBtn.remove(); followSyncBtn = null; autoSyncing = false; autoSyncStop = false; }
+      return;
+    }
+    if (followSyncBtn || !document.body) return;
+    followSyncBtn = document.createElement('button');
+    followSyncBtn.className = 'tg-follow-sync-btn';
+    followSyncBtn.type = 'button';
+    followSyncBtn.addEventListener('click', (e) => { e.preventDefault(); autoSyncFollowing(); });
+    document.body.appendChild(followSyncBtn);
+    updateFollowSyncBtn();
+  }
+  function updateFollowSyncBtn(count) {
+    if (!followSyncBtn) return;
+    const n = count != null ? count : (config.followingList || []).length;
+    followSyncBtn.textContent = autoSyncing ? `同步中… 已 ${n} 个（点击停止）` : `⬇ 一键同步全部关注（已 ${n}）`;
+    followSyncBtn.dataset.running = autoSyncing ? '1' : '0';
+  }
+
   let observer = null;
 
   function attachObserver() {
@@ -1461,6 +1665,8 @@
       for (const a of articles) {
         try { evaluate(a); } catch (err) { console.warn('[TweetGuard] eval error', err); }
       }
+      scheduleFollowingSync();   // following 页：随无限滚动增量同步关注列表
+      ensureFollowSyncButton();  // 进入自己的 following 页时挂出「一键同步」按钮
     });
     observer.observe(document.body || document.documentElement, {
       childList: true,
@@ -1501,7 +1707,7 @@
     window.addEventListener('popstate', onRouteChange);
   }
   function onRouteChange() {
-    setTimeout(() => initialScan(), 100);
+    setTimeout(() => { initialScan(); scheduleFollowingSync(); ensureFollowSyncButton(); }, 100);
   }
 
   // 用户互动追踪（D2: 最近互动减分）

@@ -1,0 +1,13 @@
+{
+  "format": "tweetguard-rules-v1",
+  "updatedAt": "2026-05-29",
+  "description": "TweetGuard 社区规则库。每条规则是一个推文正文关键词(tweet_keyword) —— 文字、短中文混写或固定 emoji 模板。仅收录推文内容类规则(不含显示名/用户名，与插件安全约束一致)。欢迎 PR 扩充。",
+  "rules": [
+    { "kind": "tweet_keyword", "value": "完整版来了", "category": "cn_nsfw_bot" },
+    { "kind": "tweet_keyword", "value": "私聊看资源", "category": "cn_nsfw_bot" },
+    { "kind": "tweet_keyword", "value": "线下sao货", "category": "cn_nsfw_bot" },
+    { "kind": "tweet_keyword", "value": "没人比她sao", "category": "cn_nsfw_bot" },
+    { "kind": "tweet_keyword", "value": "附近的哥哥滴我", "category": "cn_nsfw_bot" },
+    { "kind": "tweet_keyword", "value": "高级外围", "category": "cn_nsfw_bot" }
+  ]
+}

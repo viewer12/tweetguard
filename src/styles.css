@@ -85,6 +85,9 @@ html[data-tg-mode="breadcrumb"] article[data-testid="tweet"][data-tg="hide"] {
   transition: max-height 360ms cubic-bezier(0.4, 0, 0.2, 1),
               opacity 220ms ease;
   position: relative;
+  /* 抵消 X 给 article 的左右内边距，让折叠条与推文卡片等宽、消除两侧白边 */
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 html[data-tg-mode="breadcrumb"] article[data-testid="tweet"][data-tg="hide"] > *:not(.tg-breadcrumb) {
   opacity: 0;
@@ -263,12 +266,18 @@ html[data-tg-mode="blur"] article[data-testid="tweet"][data-tg="hide"] > .tg-bre
 article[data-testid="tweet"][data-tg="reveal"] {
   max-height: none !important;
   overflow: visible !important;
+  /* 与折叠态(hide)一致：清掉 X 的左右内边距，让折叠条对齐、展开后不偏移 */
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 article[data-testid="tweet"][data-tg="reveal"] > *:not(.tg-breadcrumb) {
   opacity: 1 !important;
   filter: none !important;
   pointer-events: auto !important;
   user-select: auto !important;
+  /* 推文内容补回左右内边距，避免贴边（折叠条不补，靠自身 head 的 padding 对齐）*/
+  padding-left: 16px;
+  padding-right: 16px;
 }
 article[data-testid="tweet"][data-tg="reveal"] > .tg-breadcrumb {
   background: transparent;
@@ -389,6 +398,34 @@ article[data-testid="tweet"][data-tg="reveal"] > .tg-mark-spam-btn {
     background: #e7e9ea;
     color: #0c0d0f;
   }
+}
+
+/* ============================================================================
+   关注页「一键同步」按钮（仅在自己的 /following 页浮现）
+   ============================================================================ */
+.tg-follow-sync-btn {
+  position: fixed;
+  bottom: 72px;
+  right: 24px;
+  z-index: 100000;
+  background: #0f172a;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22), 0 2px 6px rgba(15, 23, 42, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  transition: transform 140ms ease;
+}
+.tg-follow-sync-btn:hover { transform: translateY(-1px); }
+.tg-follow-sync-btn:active { transform: translateY(0); }
+.tg-follow-sync-btn[data-running="1"] { background: var(--tg-warn); }
+@media (prefers-color-scheme: dark) {
+  .tg-follow-sync-btn { background: #e7e9ea; color: #0c0d0f; }
+  .tg-follow-sync-btn[data-running="1"] { background: var(--tg-warn); color: #fff; }
 }
 
 /* ============================================================================

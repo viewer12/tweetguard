@@ -1,7 +1,8 @@
 import {
   DEFAULT_CONFIG, DEFAULT_SYSTEM_PROMPT, BAD_CASE_REVIEW_PROMPT,
   PROVIDERS, CATEGORY_LABELS,
-  SENSITIVITY_THRESHOLDS, mergeConfig
+  SENSITIVITY_THRESHOLDS, mergeConfig,
+  HARD_RULES, SCORING_SIGNALS
 } from '../src/defaults.js';
 
 // Prompt 编辑器配置 —— 用同一组 UI 编辑两个 prompt
@@ -14,7 +15,7 @@ const PROMPT_DEFS = {
   },
   review: {
     label: '复审 Prompt',
-    desc: '当你点「信任」或小旗按钮标记误判时，TweetGuard 用这个 prompt 让 AI 反思错在哪里，并产出新规则 / 禁用旧规则建议。每次调用 ~1500 input tokens。',
+    desc: '两种时机都会用到它来复审并沉淀规则：① 你点「信任」/ 小旗按钮标记误判时；② AI 判定为 spam 但分类时没自动产出规则时（自动兜底复审）。让 AI 反思并产出新规则 / 禁用旧规则建议。每次调用 ~1500 input tokens。',
     defaultText: BAD_CASE_REVIEW_PROMPT,
     configKey: 'customReviewPrompt'
   }
@@ -38,25 +39,8 @@ const MODULE_DEFS = [
   { id: 'ai_filler',       name: 'AI 灌水回复',   desc: '通用赞美 / 100% agree（识别率有限，默认关）' }
 ];
 
-const SIGNAL_DEFS = [
-  ['N1', '显示名 CN NSFW 关键词', '+60'],
-  ['N2', '显示名 emoji 分隔符',   '+35'],
-  ['N3', '显示名/handle 语种错位', '+30'],
-  ['N4', '推文纯 emoji 多行',     '+40'],
-  ['A1', 'username 机器模式',      '+25'],
-  ['A2', '显示名 emoji 灌水',      '+18'],
-  ['A3', '蓝标可疑',               '+22'],
-  ['A4', '默认头像',               '+8'],
-  ['B1', '加密 shill 关键词',      '+40'],
-  ['B2', 'NSFW killer 关键词',    '+50'],
-  ['B3', '中文营销 killer',        '+30'],
-  ['B4', 'emoji 比例过高',         '+15'],
-  ['B5', 'hashtag 灌水',           '+10'],
-  ['B6', '链接密度',               '+12'],
-  ['B7', '互动诱饵',               '+15'],
-  ['C2', '在爆款下灌水',           '+8'],
-  ['C3', '同线程同作者多次',       '+20']
-];
+// 规则与信号清单现在统一来自 src/defaults.js 的 HARD_RULES / SCORING_SIGNALS，
+// 与引擎(inject.js)同源维护，避免配置页再次与实际逻辑漂移。
 
 // ============================================================================
 // 状态
@@ -91,6 +75,7 @@ function renderAll() {
   renderAI();
   renderPrompt();
   renderRules();
+  renderGithubSync();
   renderLearnedRules();
   renderBadCases();
   renderCache();
@@ -213,26 +198,58 @@ function updatePromptStatus() {
 
 // ── 规则 ────────────────────────────────────────
 function renderRules() {
-  const grid = $('#signals-grid');
-  grid.innerHTML = SIGNAL_DEFS.map(([id, name, weight]) => {
-    // 根据 module 启用情况粗略判断信号是否启用
-    let on = true;
-    if (id.startsWith('N')) on = !!config.modules?.cn_nsfw_bot;
-    if (id === 'B1') on = !!config.modules?.crypto_shill;
-    if (id === 'B2') on = !!config.modules?.nsfw;
-    if (id === 'B3') on = !!config.modules?.cn_marketing;
-    if (id === 'B7') on = !!config.modules?.engagement_bait;
-    return `
-      <div class="signal-item" data-on="${on ? '1' : '0'}">
-        <span class="signal-id">${id}</span>
-        <span class="signal-name">${escapeHtml(name)}</span>
-        <span class="signal-weight">${weight}</span>
+  // 对应模块开关决定该规则 / 信号当前是否生效；无 module 字段 = 恒定生效
+  const isOn = (item) => !item.module || !!config.modules?.[item.module];
+
+  // 硬规则
+  const rulesGrid = $('#rules-grid');
+  if (rulesGrid) {
+    rulesGrid.innerHTML = HARD_RULES.map(rule => `
+      <div class="rule-item" data-on="${isOn(rule) ? '1' : '0'}">
+        <span class="rule-id">${escapeHtml(rule.id)}</span>
+        <span class="rule-text">${escapeHtml(rule.desc)}</span>
       </div>
-    `;
-  }).join('');
+    `).join('');
+  }
+
+  // 评分信号
+  const grid = $('#signals-grid');
+  if (grid) {
+    grid.innerHTML = SCORING_SIGNALS.map(sig => `
+      <div class="signal-item" data-on="${isOn(sig) ? '1' : '0'}">
+        <span class="signal-id">${escapeHtml(sig.id)}</span>
+        <span class="signal-name">${escapeHtml(sig.name)}</span>
+        <span class="signal-weight">${escapeHtml(sig.weight)}</span>
+      </div>
+    `).join('');
+  }
+
+  // 计数全部来自清单长度，杜绝散文里写死的数字再次漂移
+  for (const sel of ['#rules-count', '#about-rules-count']) {
+    const el = $(sel); if (el) el.textContent = HARD_RULES.length;
+  }
+  for (const sel of ['#signals-count', '#about-signals-count']) {
+    const el = $(sel); if (el) el.textContent = SCORING_SIGNALS.length;
+  }
 
   // 自定义关键词
   renderChips('#custom-keyword-list', config.customKeywords || [], 'customKeywords');
+}
+
+function renderGithubSync() {
+  const gs = config.githubSync || {};
+  const en = $('#gh-enabled'); if (en) en.checked = gs.enabled !== false;
+  const url = $('#gh-url'); if (url && document.activeElement !== url) url.value = gs.rulesUrl || '';
+  const disabledN = (config.githubRulesDisabled || []).length;
+  const resetBtn = $('#gh-reset-disabled'); if (resetBtn) resetBtn.style.display = disabledN > 0 ? '' : 'none';
+  const status = $('#gh-status');
+  if (!status) return;
+  const cnt = (config.githubRules || []).length;
+  const suffix = disabledN > 0 ? ` · 已禁用 ${disabledN} 条` : '';
+  if (!gs.lastSyncAt) status.textContent = '尚未同步' + suffix;
+  else if (gs.lastSyncStatus === 'ok') status.textContent = `上次同步 ${formatRelative(gs.lastSyncAt)} · 已加载 ${cnt} 条社区规则${suffix}`;
+  else if (typeof gs.lastSyncStatus === 'string' && gs.lastSyncStatus.startsWith('error')) status.textContent = `上次同步 ${formatRelative(gs.lastSyncAt)} 失败：${gs.lastSyncStatus.slice(6)}${suffix}`;
+  else status.textContent = `上次同步 ${formatRelative(gs.lastSyncAt)}${suffix}`;
 }
 
 // ── 已学习规则 ────────────────────────────────────────
@@ -264,7 +281,7 @@ function renderLearnedRules() {
 
   list.innerHTML = rules.map(rule => `
     <div class="learned-rule" data-id="${escapeHtml(rule.id)}" data-enabled="${rule.enabled !== false ? '1' : '0'}">
-      <span class="learned-rule-kind">${escapeHtml(LEARNED_KIND_LABEL[rule.kind] || rule.kind)}</span>
+      <span class="learned-rule-kind" data-origin="${rule.origin || 'unknown'}" title="${rule.origin === 'feedback' ? '你标记垃圾后产生' : rule.origin === 'auto' ? 'AI 浏览时自动学习' : '旧规则，来源未记录'}">${rule.origin === 'feedback' ? '你反馈' : rule.origin === 'auto' ? '自动' : '—'}</span>
       <span class="learned-rule-value" title="${escapeHtml(rule.value)}${rule.sourceHandle ? '\n来源: ' + escapeHtml(rule.sourceHandle) : ''}">${escapeHtml(rule.value)}</span>
       <span class="learned-rule-category">${escapeHtml(CATEGORY_LABELS[rule.category] || rule.category || '可疑')}</span>
       <span class="learned-rule-hits">命中 ${rule.hitCount || 0}</span>
@@ -358,7 +375,7 @@ function renderCache() {
   list.innerHTML = entries.slice(0, 500).map(([handle, entry]) => `
     <div class="cache-row" data-decision="${entry.decision}" data-handle="${escapeHtml(handle)}">
       <div class="cache-handle">
-        <span class="cache-handle-id">${escapeHtml(handle)}</span>
+        <a class="cache-handle-id" style="text-decoration:none" href="https://x.com/${encodeURIComponent(handle.replace(/^@/, ''))}" target="_blank" rel="noopener noreferrer" title="在 X 打开主页">${escapeHtml(handle)}</a>
         ${entry.displayName ? `<span class="cache-handle-name">${escapeHtml(entry.displayName)}</span>` : ''}
       </div>
       <div class="cache-category">${escapeHtml(CATEGORY_LABELS[entry.category] || entry.category || '未分类')}</div>
@@ -752,6 +769,148 @@ function bindEvents() {
     } finally {
       e.target.value = '';
     }
+  });
+
+  // —— 完整配置备份 / 恢复(换设备迁移用)——
+  $('#backup-export')?.addEventListener('click', () => {
+    const c = config || {};
+    const includeKey = !!$('#backup-include-key')?.checked;
+    const backup = {
+      format: 'tweetguard-backup-v1',
+      exportedAt: Date.now(),
+      appVersion: '0.1.0',
+      includesApiKey: includeKey,
+      config: {
+        sensitivity: c.sensitivity,
+        hideMode: c.hideMode,
+        modules: c.modules,
+        learnedRules: c.learnedRules || [],
+        whitelist: c.whitelist || [],
+        blacklist: c.blacklist || [],
+        followingList: c.followingList || [],
+        customKeywords: c.customKeywords || [],
+        badCases: c.badCases || [],
+        // AI 配置:默认抹掉 apiKey(敏感);仅当用户勾选「包含 API Key」时才完整导出
+        ai: c.ai ? (includeKey ? { ...c.ai } : { ...c.ai, apiKey: '' }) : undefined
+      },
+      cache: cache || {}
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tweetguard-backup-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(includeKey ? '已导出全部配置（含 API Key，请妥善保管）' : '已导出全部配置（不含 API Key）');
+  });
+
+  $('#backup-import')?.addEventListener('click', () => $('#backup-import-file').click());
+  $('#backup-import-file')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (data.format !== 'tweetguard-backup-v1') throw new Error('不是 TweetGuard 备份文件');
+      const inc = data.config || {};
+      // 数组类:合并去重(保留现有 + 并入导入,不丢失本机已有数据)
+      const mergeArr = (cur, add, key) => {
+        const out = Array.isArray(cur) ? [...cur] : [];
+        const seen = new Set(out.map(x => key ? key(x) : x));
+        for (const item of (Array.isArray(add) ? add : [])) {
+          const k = key ? key(item) : item;
+          if (!seen.has(k)) { seen.add(k); out.push(item); }
+        }
+        return out;
+      };
+      config.whitelist      = mergeArr(config.whitelist, inc.whitelist);
+      config.blacklist      = mergeArr(config.blacklist, inc.blacklist);
+      config.followingList  = mergeArr(config.followingList, inc.followingList);
+      config.customKeywords = mergeArr(config.customKeywords, inc.customKeywords);
+      config.learnedRules   = mergeArr(config.learnedRules, inc.learnedRules, r => r.id || (r.kind + '|' + r.value));
+      config.badCases       = mergeArr(config.badCases, inc.badCases, b => b.id || (b.handle + '|' + b.capturedAt));
+      // 偏好:用导入值覆盖
+      if (inc.sensitivity) config.sensitivity = inc.sensitivity;
+      if (inc.hideMode) config.hideMode = inc.hideMode;
+      if (inc.modules) config.modules = { ...config.modules, ...inc.modules };
+      // AI 配置合并：优先保留本机已填的 key；本机没填则采用备份里的 key(支持含 Key 的完整迁移)
+      if (inc.ai) {
+        const keepKey = config.ai?.apiKey || inc.ai.apiKey || '';
+        config.ai = { ...config.ai, ...inc.ai, apiKey: keepKey };
+      }
+      await saveConfig();
+      // 识别账号缓存:同 handle 取较新
+      if (data.cache && typeof data.cache === 'object') {
+        const merged = { ...cache };
+        for (const [h, entry] of Object.entries(data.cache)) {
+          if (!merged[h] || (merged[h].evaluatedAt || 0) < (entry.evaluatedAt || 0)) merged[h] = entry;
+        }
+        cache = merged;
+        await chrome.storage.local.set({ cache });
+      }
+      renderAll();
+      showToast('配置导入完成 · 已合并到本机');
+    } catch (err) {
+      showToast('导入失败：' + err.message, 'error');
+    } finally {
+      e.target.value = '';
+    }
+  });
+
+  // —— GitHub 社区规则同步 ——
+  $('#gh-enabled')?.addEventListener('change', (e) => {
+    if (!config.githubSync) config.githubSync = {};
+    config.githubSync.enabled = e.target.checked;
+    scheduleSave();
+  });
+  $('#gh-url')?.addEventListener('change', (e) => {
+    if (!config.githubSync) config.githubSync = {};
+    config.githubSync.rulesUrl = e.target.value.trim();
+    scheduleSave();
+  });
+  $('#gh-sync-now')?.addEventListener('click', async () => {
+    const status = $('#gh-status');
+    if (status) status.textContent = '同步中…';
+    try {
+      const r = await chrome.runtime.sendMessage({ type: 'github-sync-now' });
+      const { config: fresh } = await chrome.storage.local.get('config');
+      if (fresh) config = mergeConfig(fresh);
+      if (r?.error) { if (status) status.textContent = '同步失败：' + r.error; }
+      else { if (status) status.textContent = `同步成功 · 加载 ${r?.count ?? 0} 条`; }
+      renderGithubSync();
+    } catch (err) {
+      if (status) status.textContent = '同步失败：' + (err.message || err);
+    }
+  });
+  $('#gh-reset-disabled')?.addEventListener('click', async () => {
+    config.githubRulesDisabled = [];
+    await saveConfig();
+    renderGithubSync();
+    showToast('已重置：社区规则禁用清单已清空');
+  });
+
+  $('#gh-contribute')?.addEventListener('click', async () => {
+    // 把本地学习规则(启用的 tweet_keyword)导出成「社区格式」——与同步拉取格式一致
+    const rules = (config.learnedRules || [])
+      .filter(r => r.enabled !== false && r.kind === 'tweet_keyword' && r.value)
+      .map(r => ({ kind: 'tweet_keyword', value: r.value, category: r.category || 'cn_nsfw_bot' }));
+    if (!rules.length) { showToast('没有可贡献的本地规则', 'error'); return; }
+    const json = JSON.stringify({ format: 'tweetguard-rules-v1', rules }, null, 2);
+    // 复制到剪贴板 + 下载文件(双保险，确保用户一定拿得到内容)
+    try { await navigator.clipboard.writeText(json); } catch {}
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'tweetguard-rules-contribution.json'; a.click();
+    URL.revokeObjectURL(url);
+    // 从同步 URL 推导仓库，直达 GitHub「新建文件」提交页(内容短则预填，长则打开仓库由你粘贴)
+    const m = (config.githubSync?.rulesUrl || '').match(/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\//);
+    if (m) {
+      const [, owner, repo, branch] = m;
+      const fname = `contributions/${Date.now()}.json`;
+      const pre = `https://github.com/${owner}/${repo}/new/${branch}?filename=${encodeURIComponent(fname)}&value=${encodeURIComponent(json)}`;
+      window.open(pre.length < 7000 ? pre : `https://github.com/${owner}/${repo}`, '_blank');
+    }
+    showToast(`已复制 + 下载 ${rules.length} 条规则；在打开的 GitHub 页确认 / 粘贴后提 PR 即可`);
   });
 
   // ── 名单 ──

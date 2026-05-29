@@ -678,7 +678,7 @@ code { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; fon
 
 .learned-rule {
   display: grid;
-  grid-template-columns: 56px 1fr 90px 70px 80px auto;
+  grid-template-columns: 64px 1fr 90px 70px 80px auto;
   gap: 12px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
@@ -706,6 +706,9 @@ code { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; fon
   text-align: center;
   letter-spacing: -0.01em;
 }
+/* 来源区分：你反馈的更显眼，自动的中性，旧规则(未记录)淡化 */
+.learned-rule-kind[data-origin="feedback"] { color: var(--text); font-weight: 600; }
+.learned-rule-kind[data-origin="unknown"] { color: var(--text-faint); }
 
 .learned-rule-value {
   font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -1054,8 +1057,9 @@ code { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; fon
   font-size: 11px;
   font-weight: 600;
   color: var(--text-soft);
-  width: 22px;
+  min-width: 22px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .signal-name { flex: 1; color: var(--text); }
@@ -1068,6 +1072,13 @@ code { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; fon
 
 .signal-item[data-on="0"] { opacity: 0.5; }
 .signal-item[data-on="0"] .signal-name::after {
+  content: " · 关闭";
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.rule-item[data-on="0"] { opacity: 0.5; }
+.rule-item[data-on="0"] .rule-text::after {
   content: " · 关闭";
   color: var(--text-faint);
   font-size: 11px;

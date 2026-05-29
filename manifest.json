@@ -44,8 +44,9 @@
     "page": "options/options.html",
     "open_in_tab": true
   },
-  "permissions": ["storage"],
+  "permissions": ["storage", "alarms"],
   "host_permissions": [
+    "https://raw.githubusercontent.com/*",
     "https://api.deepseek.com/*",
     "https://api.openai.com/*",
     "https://api.anthropic.com/*",

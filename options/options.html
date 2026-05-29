@@ -125,6 +125,23 @@
             </div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-title">备份与恢复</div>
+            <div class="card-section-desc">
+              导出你的全部配置（学习规则、黑白名单、关注列表、反馈历史、自定义关键词、识别账号、偏好设置）。换设备后导入即可恢复。
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;margin:8px 0;cursor:pointer;">
+              <input type="checkbox" id="backup-include-key">
+              <span>包含 API Key（方便完整迁移；勾选后 <strong>文件含明文密钥，请妥善保管、勿分享</strong>）</span>
+            </label>
+            <div class="card-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button id="backup-export" class="btn btn-ghost" type="button">导出全部配置</button>
+              <button id="backup-import" class="btn btn-ghost" type="button">导入配置</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ─────────────────── AI ─────────────────── -->
@@ -294,25 +311,16 @@
 
         <div class="card">
           <div class="card-section">
-            <div class="card-section-title">硬规则（一票否决）</div>
-            <div class="card-section-desc">命中任一即判为 spam，跳过评分循环。</div>
-            <div class="rules-grid">
-              <div class="rule-item"><span class="rule-id">R2</span><span class="rule-text">NSFW handle + NSFW killer 关键词</span></div>
-              <div class="rule-item"><span class="rule-id">R3</span><span class="rule-text">pump.fun 链接 + 是回复</span></div>
-              <div class="rule-item"><span class="rule-id">R4</span><span class="rule-text">显示名含 OnlyFans/Fansly + 是回复</span></div>
-              <div class="rule-item"><span class="rule-id">R6</span><span class="rule-text">显示名含 4+ NSFW emoji</span></div>
-              <div class="rule-item"><span class="rule-id">R7</span><span class="rule-text">显示名含「寻炮 / 约炮 / 点击主页 / 找男友 / 老司机」等中文引流词</span></div>
-              <div class="rule-item"><span class="rule-id">R8</span><span class="rule-text">emoji 分隔符显示名 + 英文+长数字 handle</span></div>
-              <div class="rule-item"><span class="rule-id">R9</span><span class="rule-text">CJK 显示名 + 英文+长数字 handle + 推文纯 emoji</span></div>
-              <div class="rule-item"><span class="rule-id">R10</span><span class="rule-text">显示名含「加微 / 加 TG / 电报 / 纸飞机」+ 是回复</span></div>
-            </div>
+            <div class="card-section-title">硬规则（一票否决，<span id="rules-count">—</span> 条）</div>
+            <div class="card-section-desc">命中任一即判为 spam，跳过评分循环。灰显表示对应模块当前已关闭。</div>
+            <div class="rules-grid" id="rules-grid"></div>
           </div>
 
           <div class="divider"></div>
 
           <div class="card-section">
-            <div class="card-section-title">评分信号（17 项）</div>
-            <div class="card-section-desc">每条推文按这些信号累加分数；超过阈值即触发。</div>
+            <div class="card-section-title">评分信号（<span id="signals-count">—</span> 项）</div>
+            <div class="card-section-desc">每条推文按这些信号累加分数；超过阈值即触发。灰显表示对应模块当前已关闭。</div>
             <div class="signals-grid" id="signals-grid"></div>
           </div>
         </div>
@@ -366,6 +374,35 @@
             <div class="chip-input">
               <div class="chip-list" id="custom-keyword-list"></div>
               <input id="custom-keyword-input" type="text" placeholder="输入关键词后回车" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-section">
+            <div class="card-section-title">社区规则同步（GitHub）</div>
+            <div class="card-section-desc">
+              从 GitHub 仓库同步社区共建的规则（仅推文关键词；显示名 / 用户名类规则会被自动拒绝，与本地安全约束一致）。默认开启，可关闭。
+            </div>
+            <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <div class="row-text">
+                <div class="row-title">启用自动同步</div>
+                <div class="row-desc">浏览器启动时 + 每 24 小时拉取一次；也可随时手动「立即同步」。</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="gh-enabled">
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </label>
+            </div>
+            <input id="gh-url" type="text" class="input" placeholder="规则文件 raw URL（https://raw.githubusercontent.com/...）" style="width:100%;margin-top:10px;box-sizing:border-box;">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+              <button id="gh-sync-now" class="btn btn-ghost" type="button">立即同步</button>
+              <button id="gh-contribute" class="btn btn-ghost" type="button">贡献我的规则 →</button>
+              <button id="gh-reset-disabled" class="btn btn-ghost" type="button" style="display:none;">重置已禁用</button>
+              <span id="gh-status" style="color:var(--text-faint);font-size:12px;"></span>
+            </div>
+            <div class="card-section-desc" style="margin-top:8px;font-size:12px;">
+              「贡献我的规则」把你本地学到的规则导出成社区格式（自动复制到剪贴板 + 下载文件），并打开上方仓库的 GitHub 提交页——内容不多时会直接预填，确认后提个 PR 即可，大家共享同一套规则库。
             </div>
           </div>
         </div>
@@ -467,9 +504,9 @@
           <div class="card-section about-block">
             <h3>它是怎么工作的</h3>
             <ol class="about-list">
-              <li><strong>L0 规则</strong>：17 项快速信号 + 10 条硬规则，毫秒内决断 ~80% 显性 spam</li>
+              <li><strong>L0 规则</strong>：<span id="about-signals-count">—</span> 项评分信号 + <span id="about-rules-count">—</span> 条硬规则，毫秒内决断 ~80% 显性 spam</li>
               <li><strong>缓存</strong>：对每个账号的判定缓存到本地，下次遇到瞬时应用（无 AI 调用）</li>
-              <li><strong>AI</strong>：仅对 L0 灰区（评分 20-70）的推文调用一次 AI 复核</li>
+              <li><strong>AI</strong>：仅对 L0 灰区（分数不高不低、本地拿不准）的推文调用一次 AI 复核</li>
               <li><strong>折叠条</strong>：被识别的推文平滑收起为 40px 细条，平均 350ms 过渡，可一键展开</li>
             </ol>
           </div>
@@ -503,6 +540,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <input type="file" id="import-file" accept="application/json" hidden>
+  <input type="file" id="backup-import-file" accept="application/json" hidden>
 
   <script type="module" src="options.js"></script>
 </body>

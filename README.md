@@ -19,45 +19,63 @@
 
 ## 简介
 
-TweetGuard 是一个 Chrome 扩展，在浏览器端识别并折叠 X (Twitter) 信息流中的垃圾推文。无后端、无遥测，所有状态保存在 `chrome.storage.local`。可选自带 AI API key 提升识别覆盖。
+TweetGuard 在浏览器端识别并静默折叠 X (Twitter) 信息流里的垃圾推文。无后端、无遥测，所有数据保存在 `chrome.storage.local`。内置规则开箱即用；可选自带 AI API key，让系统在浏览时**自动学习并沉淀**新的 spam 模板；还能与 GitHub 社区规则库**双向同步**，大家共建同一套规则。
 
 ---
 
 ## 工作原理
 
-信息流里的每条推文依次经过三层判定：
+每条推文按"成本从低到高"依次经过几道关，任意一关定案即停：
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  L0 — 内置规则（同步，< 1 ms）                                   │
-│  17 个手工调校的信号 + 6 条硬规则 + 集体感染加成。               │
-│  约 80% 显性 spam 在此层命中。                                   │
-├─────────────────────────────────────────────────────────────────┤
-│  Cache — 本地按账号判定缓存                                      │
-│  某个 handle 被规则、AI 或用户判定过后，结果缓存在本地，         │
-│  同账号的后续推文直接复用判定结果。                              │
-├─────────────────────────────────────────────────────────────────┤
-│  L_AI — 复审灰区推文（可选）                                     │
-│  L0 不确定时，送你配置的 AI（DeepSeek / OpenAI / Anthropic /     │
-│  Gemini / Ollama）。AI 同时从样本中归纳新规则，                  │
-│  以减少后续同模板的 AI 调用。                                    │
-└─────────────────────────────────────────────────────────────────┘
+① 名单保护（最高优先级）
+   白名单 / 你关注的人 → 永不隐藏；黑名单 → 强制隐藏。
+   任何规则（含社区规则）都不会越过它去隐藏你信任的人。
+        │
+② 账号缓存
+   该账号此前被判定过 → 直接复用结果，零计算、零 AI 调用。
+        │
+③ 规则命中（命中即隐藏）
+   内置硬规则 + AI 学习规则 + GitHub 社区规则
+   —— 推文关键词 / 短中文混写 / 固定 emoji 模板。
+        │
+④ L0 评分（13 项信号累加，过阈值则隐藏 / 模糊）
+   显示名维度信号已整体降权（显示名不可靠）。
+        │
+⑤ AI 复核（灰区，可选）
+   本地拿不准时，送你配置的 AI（DeepSeek / OpenAI / Anthropic /
+   Gemini / Groq / OpenRouter / Ollama）。AI 判定的同时会
+   **自动沉淀规则** —— 下次同模板本地直接命中，不再花 AI。
 ```
 
-被识别的推文以一条细折叠条替代，标注隐藏原因，点击可展开恢复原文。
+被识别的推文折叠成一条与卡片等宽的细条，标注命中原因与来源（本地规则 / 社区 / AI / 缓存），点击可展开、再点可收起。
+
+---
+
+## 规则的三个来源
+
+| 来源 | 怎么来的 | 在哪看 / 管 |
+|---|---|---|
+| **内置规则** | 写死在引擎里：**4 条硬规则**（黑名单、pump.fun、显示名中文引流词、加微/TG+回复）+ **13 项评分信号** | 设置 →「规则与权重」（动态展示，与引擎单一数据源对齐）|
+| **AI 学习规则** | AI 判 spam 时**自动蒸馏**推文关键词；分类没产出时用复审 prompt 兜底补一次；你手动标记误判时也会复审产出 | 设置 →「AI 学习到的规则」（每条标注来源「自动」/「你反馈」，可禁可删）|
+| **GitHub 社区规则** | 从社区仓库同步大家共建的规则；你也能一键贡献自己的 | 设置 →「规则与权重」→「社区规则同步」|
+
+**自我进化**：AI 每识别一条本地规则漏掉的 spam，就把它的推文关键词（文字、短中文混写如 `sao货`、或固定 emoji 模板）沉淀成规则，下次同模板零 AI 命中 —— **越用越省、越用越准**。
 
 ---
 
 ## 功能
 
-- **多层识别**：规则 → 缓存 → AI，按成本从低到高依次评估。
-- **自带 AI Key (BYOK)**：支持 DeepSeek、OpenAI、Anthropic、Gemini、Groq、OpenRouter、Ollama（本地）。
-- **反馈学习**：在被错隐的推文上点「信任」会自动禁用导致误判的规则；在漏判的 spam 上点旗标可触发规则归纳。
-- **跨 handle 模板识别**：多次标记相似文本（如 `她太涩了 t`、`她太涩了 x`）后，系统归纳出 `tweet_keyword: "她太涩了"`，下次同模板不再调用 AI。
-- **规则可见**：每条被隐藏的推文显示具体命中的规则，所有规则可查、可改、可禁用。
-- **中文场景规则**：内置针对中文 spam 模板的规则（寻固炮、加微、返佣、撸毛、sao 货、pan.quark.cn 等）。
-- **CSS 折叠条**：折叠/展开通过 CSS transition；AI 评估期间用脉冲点占位，避免布局抖动。
-- **无遥测**：无服务器、无埋点、无远程加载。对外流量仅为用户显式发起的 AI API 调用。
+- **名单优先保护**：你关注 / 加白名单的人，任何规则（含社区规则）都不会误隐藏 —— fail-open 底线。
+- **三来源规则**：内置 + AI 自学习 + GitHub 社区，统统可见、可禁、可删。
+- **AI 自动沉淀**：判定 spam 后自动归纳规则（含 emoji 模板）；分类没产出时复用复审 prompt 兜底补一次。
+- **自带 AI Key (BYOK)**：DeepSeek、OpenAI、Anthropic、Gemini、Groq、OpenRouter、Ollama（本地）。
+- **GitHub 社区规则同步**：双向——拉取共享规则 + 一键贡献你的规则；误判的社区规则可在本地否决，且同步不覆盖你的否决。
+- **关注列表自动同步**：在你自己的「正在关注」页点一下，自动滚动抓取全部关注账号纳入保护（用 X 自身的加载机制，不逆向接口）。
+- **配置备份 / 恢复**：完整导出导入（学习规则、黑白名单、关注列表、反馈历史、自定义关键词、识别账号、偏好），换设备一键迁移；API Key 可选包含。
+- **反馈学习**：误隐藏点「信任」自动禁用闯祸规则；漏判点旗标触发规则归纳。
+- **隐藏方式可选**：折叠条 / 原地模糊 / 彻底移除；三档灵敏度。
+- **无遥测**：无服务器、无埋点、无远程加载。对外流量仅为你显式发起的 AI 调用，以及（启用时）从 GitHub 拉取社区规则。
 
 ---
 
@@ -74,15 +92,16 @@ Chrome Web Store 上架前，通过开发者模式安装：
 4. 点击 **加载已解压的扩展程序**，选择克隆下来的目录。
 5. 打开 `x.com` 即生效，默认启用内置规则。
 
+> 修改代码后，需在 `chrome://extensions` 点扩展的 **刷新** 图标重载，再刷新 `x.com` 才会生效。
+
 ---
 
 ## 配置 AI（可选）
 
-仅使用内置规则即可覆盖大部分显性 spam。启用 AI 层后，覆盖率从约 80% 提升到约 95%，主要用于识别内置规则尚未覆盖的新模板。
+仅用内置规则即可覆盖大部分显性 spam。启用 AI 层后，覆盖率从约 80% 提升到约 95%，并开始**自动学习沉淀**内置规则尚未覆盖的新模板。
 
-1. 点击工具栏 TweetGuard 图标 → **设置**。
-2. 切换到 **AI 提供商** 标签。
-3. 选择 provider，填入 API key，点击 **运行测试**（使用 5 条已知样本验证模型）。
+1. 工具栏 TweetGuard 图标 → **设置** → **AI 提供商**。
+2. 选择 provider，填入 API key，点 **运行测试**（用 5 条已知样本验证）。
 
 | Provider | 推荐模型 | 每 1000 次评估约费用 |
 |---|---|---|
@@ -91,36 +110,34 @@ Chrome Web Store 上架前，通过开发者模式安装：
 | Anthropic | `claude-haiku-4-5` | ≈ $1 |
 | Gemini | `gemini-2.0-flash` | 免费额度 |
 | Groq | `llama-3.1-8b-instant` | — |
-| Ollama | `qwen2.5:7b` | $0（本地运行） |
+| Ollama | `qwen2.5:7b` | $0（本地运行，推文不离开本机） |
 
-如需推文数据不离开本机，选择 Ollama 本地模式。
+两个 Prompt（分类 / 复审）都在 **设置 → Prompt** 里可看、可改、可还原。
+
+---
+
+## 社区规则
+
+TweetGuard 自带从 GitHub 同步社区规则的能力（默认开启，可关）：
+
+- **同步（拉取）**：默认从本仓库的 [`community-rules.json`](community-rules.json) 拉取，启动时 + 每 24 小时各一次，也可手动「立即同步」。拉来的规则与 AI 学习规则走**同一道安全闸门**：只接受推文关键词（`tweet_keyword`），显示名 / 用户名类规则一律拒绝。
+- **贡献（推送）**：设置 →「规则与权重」→「社区规则同步」→「贡献我的规则」，把你的本地学习规则导出成社区格式（复制到剪贴板 + 下载 + 打开 GitHub 提交页），确认后提个 PR 即可。
+- **否决**：误判的社区规则可点「信任」本地否决，且每次同步**不会覆盖**你的否决。
+
+规则文件格式：
+```json
+{ "format": "tweetguard-rules-v1", "rules": [ { "kind": "tweet_keyword", "value": "完整版来了", "category": "cn_nsfw_bot" } ] }
+```
 
 ---
 
 ## 隐私
 
-- 无后端、无遥测，仓库不包含任何服务端代码。
-- 所有状态保存在 `chrome.storage.local`：配置、缓存、学习规则、反馈历史均仅保存在本机。
-- 对外流量仅为用户主动发起的 AI API 调用，由本地直连用户选择的 provider，TweetGuard 不参与中转。
+- 无后端、无遥测，仓库不含任何服务端代码。
+- 所有状态保存在 `chrome.storage.local`：配置、缓存、学习规则、反馈历史均仅在本机。
+- 对外流量仅为：你主动发起的 AI API 调用（本地直连你选的 provider，TweetGuard 不中转）+ 启用时从 GitHub 拉取社区规则。
 - 支持 Ollama 本地模式，推文数据可不离开本机。
-- 不基于 username 判定 spam。`@handle` 在结构上不可靠（亚洲用户大量使用「罗马名 + 数字」格式）。内置规则仅基于显示名关键词模板与推文内容；AI 学习仅基于推文文本。
-
-完整数据流设计见 [docs/AI_ARCHITECTURE.md](docs/AI_ARCHITECTURE.md)。
-
----
-
-## 文档
-
-设计与工程文档见 [`docs/`](docs/)：
-
-| 文档 | 内容 |
-|---|---|
-| [PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md) | 市场调研、竞品分析、产品定位 |
-| [DETECTION_LOGIC.md](docs/DETECTION_LOGIC.md) | 17 个信号如何给推文打分；含逐步推演 |
-| [DEFAULT_RULES.md](docs/DEFAULT_RULES.md) | 默认规则集 —— 关键词、正则、权重、阈值 |
-| [PERFORMANCE_UX.md](docs/PERFORMANCE_UX.md) | FOUC 防治、MutationObserver 设计、渲染时序 |
-| [AI_ARCHITECTURE.md](docs/AI_ARCHITECTURE.md) | BYOK 架构、Prompt 工程、缓存策略、成本模型 |
-| [LONG_TERM_DEFENSE.md](docs/LONG_TERM_DEFENSE.md) | 多层防御的设计动机 |
+- **不基于用户名（@handle）判定 spam**：handle 在结构上不可靠（亚洲用户大量使用「罗马名 + 数字」格式）。显示名维度的内置硬规则也克制到极少数（仅中文引流词、加微/TG），其余显示名信号在评分层降权；AI 学习与社区规则**只基于推文内容**。
 
 ---
 
@@ -128,50 +145,42 @@ Chrome Web Store 上架前，通过开发者模式安装：
 
 ```
 TweetGuard/
-├── manifest.json              Chrome MV3 manifest，仅 `storage` 权限
+├── manifest.json              Chrome MV3 manifest（storage + alarms 权限）
+├── community-rules.json       社区规则库（GitHub 同步的默认源）
 ├── src/
-│   ├── content.js             隔离环境桥接
-│   ├── inject.js              页面 context 主体：DOM 观察、L0 规则、
-│   │                          actuator、AI 客户端、反馈处理
-│   ├── background.js          service worker：AI fetch 代理
-│   ├── defaults.js            默认配置、provider 目录、prompts
-│   └── styles.css             注入页面的 CSS（折叠条、码掉、pending 三态）
+│   ├── content.js             隔离环境桥接（storage / AI 请求转发）
+│   ├── inject.js              页面 context 主体：DOM 观察、L0 规则评分、
+│   │                          缓存、AI 客户端、自动沉淀、关注同步、actuator
+│   ├── background.js          service worker：AI fetch 代理 + GitHub 规则同步
+│   ├── defaults.js            默认配置、provider 目录、prompts、规则展示单一数据源
+│   └── styles.css             注入页面的 CSS（折叠条 / 模糊 / pending / 同步按钮）
 ├── popup/                     工具栏弹窗（快速开关 + 统计）
-├── options/                   完整设置页（7 个 tab）
+├── options/                   完整设置页（通用 / AI / Prompt / 规则与权重 / 已识别账号 / 名单 / 关于）
 ├── docs/                      设计文档
-└── icons/                     图标资源（SVG 主源 + 16/32/48/128 PNG 切图）
+└── icons/                     图标资源（SVG 主源 + 16/32/48/128 PNG）
 ```
 
-无构建步骤。修改代码后在 `chrome://extensions` 刷新扩展并刷新 `x.com` 即可生效。
+无构建步骤。改完代码在 `chrome://extensions` 重载扩展并刷新 `x.com` 即可。
 
 ---
 
 ## 贡献
 
-欢迎 PR。可参与方向：
+- **提交规则**：最快的方式是用插件内「贡献我的规则」导出后 PR 到 [`community-rules.json`](community-rules.json)。
+- **代码方向**：中文 spam 模板（`src/inject.js` 的 `RX` 区）、多语种规则、provider 适配、UI 细节、回归测试 fixture。
 
-- 中文 spam 模板（`src/inject.js` 的 `RX` 区块）
-- 多语种 spam 规则（西班牙语 / 印尼语 / 韩语等）
-- Provider 适配（Anthropic 批量 API、OpenRouter 路由等）
-- UI / 视觉细节（`options/options.css` 或 `src/styles.css`）
-- 测试 fixture：真实 spam 的 DOM 快照，用于回归测试
-
-提交 PR 前请：
-
-1. 在真实 `x.com` 上至少进行 30 分钟滚动测试。
-2. 确认不会基于弱信号自动屏蔽合法账号。
-3. 运行 `node -c src/*.js` 确认无语法错误。
+提交 PR 前请：在真实 `x.com` 滚动测试；确认不会基于弱信号误伤合法账号；`node --check src/*.js` 无语法错误。
 
 ---
 
 ## 路线图
 
+- [x] 缓存 / 配置导出导入
+- [x] 社区规则订阅与贡献（GitHub 同步）
 - [ ] Chrome Web Store 上架
-- [ ] Firefox 移植（Firefox 已稳定支持 Manifest V3）
+- [ ] Firefox 移植（MV3）
 - [ ] 浏览器内分类器（`transformers.js`，无需 AI key）
-- [ ] 完整英文 UI（当前以中文为主）
-- [ ] 规则集订阅机制（类似 uBlock Origin）
-- [ ] 缓存导出/导入
+- [ ] 完整英文 UI
 
 ---
 

@@ -65,6 +65,17 @@ chrome.runtime.onInstalled.addListener(async () => {
   const { config } = await chrome.storage.local.get('config');
   const merged = mergeConfig(config);
   await chrome.storage.local.set({ config: merged });
+  scheduleGithubSync();
+  syncGithubRules().catch(() => {});
+});
+
+chrome.runtime.onStartup?.addListener(() => {
+  scheduleGithubSync();
+  syncGithubRules().catch(() => {});
+});
+
+chrome.alarms?.onAlarm.addListener((alarm) => {
+  if (alarm.name === GITHUB_ALARM) syncGithubRules().catch(() => {});
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -82,6 +93,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === 'ai-review-bad-case') {
     handleBadCaseReview(msg.payload).then(sendResponse).catch(err => {
+      sendResponse({ error: err.message || String(err) });
+    });
+    return true;
+  }
+  if (msg.type === 'github-sync-now') {
+    syncGithubRules(true).then(sendResponse).catch(err => {
       sendResponse({ error: err.message || String(err) });
     });
     return true;
@@ -367,10 +384,12 @@ function validateSignature(sig) {
 
   const value = typeof sig.value === 'string' ? sig.value.trim() : '';
 
-  // keyword 类型最低 5 字符（之前是 3，太松，会学到"不是"/"什么"这种通用词）
-  // regex 类型最低 7 字符（之前是 5，同样太松）
+  // 纯 ASCII keyword 最低 5 字符（防 "free"/"hot" 这类通用词）
+  // 含 CJK(中/日/韩) 的词信息密度高，短词也高特异(如 "sao货"=4字、"她太涩"=3字)→ 放宽到 ≥3
+  // regex 类型最低 7 字符
   const isRegex = sig.kind.endsWith('_regex');
-  const minLen = isRegex ? 7 : 5;
+  const hasCJK = /[぀-ヿ㐀-鿿가-힯]/.test(value);
+  const minLen = isRegex ? 7 : (hasCJK ? 3 : 5);
   if (value.length < minLen || value.length > 120) return null;
 
   // 通用词黑名单：明显常用，会产生大量误伤
@@ -465,3 +484,83 @@ function regexLiteralCharCount(pattern) {
 
 function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 function stripTrailingSlash(s) { return (s || '').replace(/\/+$/, ''); }
+
+// ============================================================================
+// GitHub 社区规则同步
+//   从用户配置的 raw URL 拉取规则文件，严格校验后写入 config.githubRules。
+//   ⚠️ 外部数据 = 不可信：每条都过 validateSignature(只接受 tweet_keyword、
+//      拒绝显示名/username 模式、拒绝过宽/通用词)，与 AI 学习规则同一道安全闸门。
+// ============================================================================
+
+const GITHUB_ALARM = 'tg-github-sync';
+
+async function fetchAndValidateGithubRules(url) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(url, { signal: controller.signal, cache: 'no-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const rawRules = Array.isArray(data) ? data : (Array.isArray(data?.rules) ? data.rules : null);
+    if (!rawRules) throw new Error('格式错误：应为数组或 { rules: [...] }');
+    const out = [];
+    const seen = new Set();
+    for (const r of rawRules) {
+      // 复用分类签名校验：只接受 tweet_keyword + 长度/通用词/regex 防御
+      const sig = validateSignature({ kind: r?.kind, value: r?.value, category: r?.category });
+      if (!sig) continue;                       // 不合规(含显示名/username/过宽)直接丢弃
+      const key = sig.value.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        id: 'gh-' + key.slice(0, 32),
+        kind: sig.kind,
+        value: sig.value,
+        category: sig.category || 'cn_nsfw_bot',
+        source: 'github',
+        enabled: true
+      });
+      if (out.length >= 2000) break;            // 上限，防滥用 / 防超大文件
+    }
+    return { rules: out };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function syncGithubRules(force = false) {
+  const { config } = await chrome.storage.local.get('config');
+  const cfg = mergeConfig(config);
+  const gs = cfg.githubSync || {};
+  if (!force && !gs.enabled) return { skipped: true, reason: 'disabled' };
+
+  const url = (gs.rulesUrl || '').trim();
+  if (!url) {
+    cfg.githubSync = { ...gs, lastSyncAt: Date.now(), lastSyncStatus: 'error:未配置规则 URL' };
+    await chrome.storage.local.set({ config: cfg });
+    return { error: '未配置规则 URL' };
+  }
+  try {
+    const { rules } = await fetchAndValidateGithubRules(url);
+    // 本地优先去重：剔除本地学习规则已覆盖的 value（本地删掉后下次同步会自动恢复）
+    const learnedValues = new Set((cfg.learnedRules || []).map(r => String(r.value || '').toLowerCase()));
+    const deduped = rules.filter(r => !learnedValues.has(String(r.value).toLowerCase()));
+    cfg.githubRules = deduped;
+    cfg.githubSync = { ...gs, lastSyncAt: Date.now(), lastSyncStatus: 'ok', lastSyncCount: deduped.length };
+    await chrome.storage.local.set({ config: cfg });
+    return { ok: true, count: rules.length };
+  } catch (err) {
+    const msg = String(err?.message || err).slice(0, 120);
+    cfg.githubSync = { ...gs, lastSyncAt: Date.now(), lastSyncStatus: 'error:' + msg };
+    await chrome.storage.local.set({ config: cfg });
+    return { error: msg };
+  }
+}
+
+function scheduleGithubSync() {
+  chrome.storage.local.get('config').then(({ config }) => {
+    const gs = mergeConfig(config).githubSync || {};
+    const hours = Math.max(1, gs.intervalHours || 24);
+    chrome.alarms?.create(GITHUB_ALARM, { periodInMinutes: hours * 60 });
+  });
+}
