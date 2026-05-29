@@ -86,29 +86,29 @@
         <g transform="translate(0, 48)" font-size="13">
           <!-- 行 1 -->
           <rect x="0" y="0" width="440" height="44" rx="8" fill="#F8FAFC"/>
-          <rect x="12" y="12" width="20" height="20" rx="4" fill="#0F172A"/>
-          <text x="28" y="26" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">R1</text>
-          <text x="44" y="22" fill="#0F172A" font-weight="500">黑名单 handle</text>
-          <text x="44" y="36" fill="#94A3B8" font-size="11">用户手动加入的账号一律隐藏</text>
+          <rect x="12" y="12" width="28" height="20" rx="4" fill="#0F172A"/>
+          <text x="26" y="26" font-size="9" font-weight="700" fill="#FFFFFF" text-anchor="middle">黑名单</text>
+          <text x="52" y="22" fill="#0F172A" font-weight="500">黑名单</text>
+          <text x="52" y="36" fill="#94A3B8" font-size="11">账号在你的黑名单中,一律隐藏</text>
 
           <rect x="456" y="0" width="440" height="44" rx="8" fill="#F8FAFC"/>
           <rect x="468" y="12" width="20" height="20" rx="4" fill="#0F172A"/>
-          <text x="484" y="26" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">R7</text>
-          <text x="500" y="22" fill="#0F172A" font-weight="500">中文引流模板</text>
-          <text x="500" y="36" fill="#94A3B8" font-size="11">「私聊看资源 / 加微」类硬模板命中</text>
+          <text x="478" y="26" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">R7</text>
+          <text x="496" y="22" fill="#0F172A" font-weight="500">显示名含中文色情引流词</text>
+          <text x="496" y="36" fill="#94A3B8" font-size="11">「寻炮 / 约炮 / 点击主页 / 找男友 / 破处 / 包养」等</text>
 
           <!-- 行 2 -->
           <rect x="0" y="56" width="440" height="44" rx="8" fill="#F8FAFC"/>
-          <rect x="12" y="68" width="20" height="20" rx="4" fill="#0F172A"/>
-          <text x="28" y="82" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">R10</text>
-          <text x="44" y="78" fill="#0F172A" font-weight="500">加微 + TG 联系方式</text>
-          <text x="44" y="92" fill="#94A3B8" font-size="11">含 TG / WeChat ID 的引流模板</text>
+          <rect x="12" y="68" width="24" height="20" rx="4" fill="#0F172A"/>
+          <text x="24" y="82" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">R10</text>
+          <text x="44" y="78" fill="#0F172A" font-weight="500">显示名含「加微 / 加 TG」 + 是回复</text>
+          <text x="44" y="92" fill="#94A3B8" font-size="11">在回复里推私域联系方式的引流模板</text>
 
           <rect x="456" y="56" width="440" height="44" rx="8" fill="#F8FAFC"/>
           <rect x="468" y="68" width="20" height="20" rx="4" fill="#0F172A"/>
-          <text x="484" y="82" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">R3</text>
-          <text x="500" y="78" fill="#0F172A" font-weight="500">已知钓鱼 / 短链域</text>
-          <text x="500" y="92" fill="#94A3B8" font-size="11">命中已知钓鱼域名或缩短器即隐藏</text>
+          <text x="478" y="82" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">R3</text>
+          <text x="496" y="78" fill="#0F172A" font-weight="500">pump.fun 链接 + 是回复</text>
+          <text x="496" y="92" fill="#94A3B8" font-size="11">加密 shill 在评论区灌币的硬模板</text>
         </g>
       </g>
     </g>

@@ -42,7 +42,7 @@
   <g transform="translate(224, 48)">
     <g transform="translate(48, 56)">
       <text font-size="28" font-weight="700" fill="#0F172A" letter-spacing="-0.5">AI 提供商</text>
-      <text y="28" font-size="14" fill="#475569">可选;不启用 AI 也能用内置规则。自带 Key 直连官方 API,数据不经过任何中间服务器。</text>
+      <text y="28" font-size="14" fill="#475569">可选;不启用 AI 也能用内置规则。需要你自己提供 Key,直连官方 API,数据不经过任何中间服务器。</text>
     </g>
 
     <!-- 卡片 1:provider 选择 + Key -->
@@ -50,8 +50,8 @@
       <rect width="960" height="282" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
 
       <g transform="translate(28, 28)">
-        <text font-size="15" font-weight="600" fill="#0F172A">选择 Provider(BYOK · 自带 API Key)</text>
-        <text y="22" font-size="13" fill="#475569">7 个主流 provider 全支持。Ollama 选项可走本地大模型,完全离线。</text>
+        <text font-size="15" font-weight="600" fill="#0F172A">选择 Provider(BYOK · 用你自己的 API Key)</text>
+        <text y="22" font-size="13" fill="#475569">7 个主流 provider 全支持。插件不提供 Key,需要你自己注册并填入。Ollama 选项可走本地大模型,完全离线。</text>
 
         <!-- 7 个 provider chip(选中 DeepSeek)-->
         <g transform="translate(0, 50)" font-size="13" font-weight="500">
@@ -135,7 +135,7 @@
 
   <!-- 底部浮层标题 -->
   <g transform="translate(40, 740)" opacity="0.92">
-    <rect width="490" height="44" rx="22" fill="#0F172A"/>
-    <text x="245" y="29" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">AI 自带 Key — 7 个 provider,数据不经第三方</text>
+    <rect width="540" height="44" rx="22" fill="#0F172A"/>
+    <text x="270" y="29" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">用你自己的 API Key(BYOK)— 7 个 provider,数据不经第三方</text>
   </g>
 </svg>

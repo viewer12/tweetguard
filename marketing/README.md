@@ -22,6 +22,7 @@
 ## 设计原则(为什么这样画)
 
 - **视觉与扩展实际 UI 一致**:配色 / 圆角 / 字号严格按 [options.css](../options/options.css) 的 CSS 变量取值(`--bg-soft #F8FAFC` / `--text #0F172A` / `--accent #0F172A` / `--success #059669` 等),避免店里看到的预期与装上后看到的实际产生落差。
+- **事实严格对齐代码**:硬规则、评分信号、provider 列表等数字与名称都按 [defaults.js](../src/defaults.js) 的 `HARD_RULES` / `SCORING_SIGNALS` / `PROVIDERS` 实际值写,不靠记忆推断。
 - **浏览器壳 + sidebar + 底部浮层标题** 五张截图统一构图,扫一眼能看出是同一产品的不同界面。
 - **图标含 16px 透明 padding**,严格符合 Chrome Web Store「96 内容 + 16 padding」规范(原 icon 满铺,违反规范)。
 
@@ -55,7 +56,7 @@ done
 ## 店面文案建议(可选)
 
 - **标题**:TweetGuard — 静默过滤 X 信息流里的垃圾推文
-- **简短描述**(132 字符内):本地过滤 X 上的色情 bot、加密引流、营销号;五重检测 + 可选 AI 复审 + 社区规则共建;完全开源,无服务器、无遥测。
+- **简短描述**(132 字符内):本地过滤 X 上的色情 bot、加密引流、营销号;五重检测 + 可选 AI 复审(自备 API Key)+ 社区规则共建;完全开源,无服务器、无遥测。
 - **详细描述**:可直接复用 [README.md](../README.md) 的「简介」+「工作原理」+「功能」段。
 - **类别**:Productivity 或 Social & Communication
 - **语言**:zh_CN(主) + en_US(可选,有英文 README 复用)

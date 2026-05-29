@@ -49,7 +49,7 @@
       </g>
       <g transform="translate(0, 388)">
         <circle cx="10" cy="10" r="3" fill="#059669"/>
-        <text x="28" y="15" font-weight="500">自带 AI Key,支持 7 个 provider(DeepSeek/OpenAI/Claude...)</text>
+        <text x="28" y="15" font-weight="500">AI 自备 Key(BYOK),支持 7 个 provider(DeepSeek/OpenAI/Claude...)</text>
       </g>
     </g>
   </g>
