@@ -558,46 +558,6 @@
     return regexLiteralCharCount(value) < 4;
   }
 
-  // 启动时迁移历史 learned rules，禁用不再被允许的类型：
-  //   V5: 禁用过宽 regex
-  //   V6: 禁用所有 username_regex（不再以 handle 为判定维度）
-  //   V7: 禁用所有 displayname_keyword / displayname_regex（AI 学习只允许 tweet_keyword）
-  function migrateBroadLearnedRules() {
-    if (!config.learnedRules || !config.learnedRules.length) return;
-    const disabledRules = [];
-    for (const rule of config.learnedRules) {
-      if (!rule.enabled) continue;
-      // V7: 非 tweet_keyword 一律禁用（最严格的过滤）
-      if (rule.kind !== 'tweet_keyword') {
-        rule.enabled = false;
-        rule.disabledAt = Date.now();
-        rule.disabledReason = `kind_removed_v7_${rule.kind}`;
-        disabledRules.push(rule);
-      }
-    }
-    if (disabledRules.length === 0) return;
-
-    postToContent({ type: 'save-config', data: { learnedRules: config.learnedRules } });
-
-    // 清掉 rule 来源的 spam 缓存（让被错误规则杀掉的账号重新评估）
-    // 不动 ai/user 来源的（那些是经过 AI 或用户明确判定的）
-    if (cache && typeof cache === 'object') {
-      let cleared = 0;
-      for (const handle of Object.keys(cache)) {
-        const entry = cache[handle];
-        if (entry?.source === 'rule' && entry?.decision === 'spam') {
-          delete cache[handle];
-          cleared++;
-        }
-      }
-      if (cleared > 0) {
-        postToContent({ type: 'clear-cache-by-source', source: 'rule', decision: 'spam' });
-      }
-      console.info(`[TweetGuard] migrated: disabled ${disabledRules.length} broad regex rules, cleared ${cleared} cache entries`,
-        disabledRules.map(r => r.value));
-    }
-  }
-
   // 编译好的 regex 缓存，避免每条推文都 new RegExp
   const compiledLearnedRegex = new Map();
   function getCompiledRegex(value, flags = 'i') {
@@ -1770,9 +1730,6 @@
 
   // 启动
   applyMode();
-  // V5 迁移：自动禁用过宽 learned regex（如 ^[a-zA-Z]{6,}\d{5,}$ 这种灾难规则）
-  // 同时清掉这些规则造成的 rule-source spam 缓存，让被错杀的账号重新评估
-  migrateBroadLearnedRules();
   if (document.body) {
     attachObserver();
   } else {

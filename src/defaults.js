@@ -356,32 +356,11 @@ export const CACHE_TTL = {
   user_decision: Infinity               // 用户手动 → 永久
 };
 
-// 旧 model 名 → 新 model 名（用于版本升级时自动迁移用户已保存的配置）
-const MODEL_MIGRATIONS = {
-  deepseek: {
-    'deepseek-chat': 'deepseek-v4-flash',
-    'deepseek-reasoner': 'deepseek-v4-pro'
-  }
-};
-
-// 平滑迁移：在新配置版本时合并默认值
+// 合并默认配置：以 DEFAULT_CONFIG 为基底深合并已存配置。
+// (开发期无历史用户，不做任何配置迁移；直接按最新设计)
 export function mergeConfig(stored) {
   if (!stored || typeof stored !== 'object') return { ...DEFAULT_CONFIG };
-  const merged = deepMerge(DEFAULT_CONFIG, stored);
-
-  // Model 名自动迁移
-  const provider = merged.ai?.provider;
-  const oldModel = merged.ai?.model;
-  if (provider && oldModel && MODEL_MIGRATIONS[provider]?.[oldModel]) {
-    merged.ai.model = MODEL_MIGRATIONS[provider][oldModel];
-  }
-
-  // 地址已改为固定内置常量 COMMUNITY_RULES_URL，不再走配置存储；清掉历史遗留的 rulesUrl
-  if (merged.githubSync && 'rulesUrl' in merged.githubSync) {
-    delete merged.githubSync.rulesUrl;
-  }
-
-  return merged;
+  return deepMerge(DEFAULT_CONFIG, stored);
 }
 
 function deepMerge(target, source) {
