@@ -3,176 +3,42 @@
   "updatedAt": "2026-05-29",
   "description": "TweetGuard 社区规则库。每条规则是一个推文正文关键词(tweet_keyword) —— 文字、短中文混写或固定 emoji 模板。仅收录推文内容类规则(不含显示名/用户名，与插件安全约束一致)。欢迎 PR 扩充。",
   "rules": [
-    { "kind": "tweet_keyword", "value": "完整版来了", "category": "cn_nsfw_bot" },
-    { "kind": "tweet_keyword", "value": "私聊看资源", "category": "cn_nsfw_bot" },
-    { "kind": "tweet_keyword", "value": "线下sao货", "category": "cn_nsfw_bot" },
-    { "kind": "tweet_keyword", "value": "没人比她sao", "category": "cn_nsfw_bot" },
-    { "kind": "tweet_keyword", "value": "附近的哥哥滴我", "category": "cn_nsfw_bot" },
-    { "kind": "tweet_keyword", "value": "高级外围", "category": "cn_nsfw_bot" }
-    {
-      "kind": "tweet_keyword",
-      "value": "线下sao货没人比她sao",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "线下sao货",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "能打✈️了",
-      "category": "nsfw_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "体制内老师 sao的很",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "30+的z 体制内老师 sao的很",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "高级外围玩玩",
-      "category": "nsfw_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "有弟弟想认‌识吗",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "想找会疼人的哥哥",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "刚分手想被爱",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "小狗求抱抱",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "Keep a low profile, let your strength speak silently",
-      "category": "engagement_bait"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "附近的哥哥滴我",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "时光温柔，不负人间朝夕",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "𓆩ꦿ꙳月🌸꙳",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "放空情绪，独享人间清欢",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "看淡浮沉，守住一份天真",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "心无执念，万事皆得从容",
-      "category": "bot_farm"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "༘ꦿ꙳🌸꙳",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "Cherish small simple moments deeply always",
-      "category": "engagement_bait"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "Trust the waiting",
-      "category": "marketing"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "比她好看的没她骚",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "小狗在线找主人",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "已探路花样多",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "My love will get you home through dark nights",
-      "category": "bot_farm"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "𓆩⚘ꦿ༘⛳",
-      "category": "engagement_bait"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "sao货",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "༺ꦿ🕊️꙳🍂ꦿ",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "ꕤ𓂃ꦿ꙳⛓️༘",
-      "category": "marketing"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "Dance monkey dance away all lonely sorrows",
-      "category": "engagement_bait"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "𓆩꙳༘ꦿ⛲",
-      "category": "engagement_bait"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "🦦\n🐦🤥\n🤝\n🧦",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "18岁的屌",
-      "category": "cn_solicitation"
-    },
-    {
-      "kind": "tweet_keyword",
-      "value": "👰\n🛗\n🐲☀️\n🧱",
-      "category": "cn_solicitation"
-    }
+    {"kind":"tweet_keyword","value":"完整版来了","category":"cn_nsfw_bot"},
+    {"kind":"tweet_keyword","value":"私聊看资源","category":"cn_nsfw_bot"},
+    {"kind":"tweet_keyword","value":"线下sao货","category":"cn_nsfw_bot"},
+    {"kind":"tweet_keyword","value":"没人比她sao","category":"cn_nsfw_bot"},
+    {"kind":"tweet_keyword","value":"附近的哥哥滴我","category":"cn_nsfw_bot"},
+    {"kind":"tweet_keyword","value":"高级外围","category":"cn_nsfw_bot"},
+    {"kind":"tweet_keyword","value":"线下sao货没人比她sao","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"能打✈️了","category":"nsfw_solicitation"},
+    {"kind":"tweet_keyword","value":"体制内老师 sao的很","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"30+的z 体制内老师 sao的很","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"高级外围玩玩","category":"nsfw_solicitation"},
+    {"kind":"tweet_keyword","value":"有弟弟想认‌识吗","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"想找会疼人的哥哥","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"刚分手想被爱","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"小狗求抱抱","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"Keep a low profile, let your strength speak silently","category":"engagement_bait"},
+    {"kind":"tweet_keyword","value":"时光温柔，不负人间朝夕","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"𓆩ꦿ꙳月🌸꙳","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"放空情绪，独享人间清欢","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"看淡浮沉，守住一份天真","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"心无执念，万事皆得从容","category":"bot_farm"},
+    {"kind":"tweet_keyword","value":"༘ꦿ꙳🌸꙳","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"Cherish small simple moments deeply always","category":"engagement_bait"},
+    {"kind":"tweet_keyword","value":"Trust the waiting","category":"marketing"},
+    {"kind":"tweet_keyword","value":"比她好看的没她骚","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"小狗在线找主人","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"已探路花样多","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"My love will get you home through dark nights","category":"bot_farm"},
+    {"kind":"tweet_keyword","value":"𓆩⚘ꦿ༘⛳","category":"engagement_bait"},
+    {"kind":"tweet_keyword","value":"sao货","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"༺ꦿ🕊️꙳🍂ꦿ","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"ꕤ𓂃ꦿ꙳⛓️༘","category":"marketing"},
+    {"kind":"tweet_keyword","value":"Dance monkey dance away all lonely sorrows","category":"engagement_bait"},
+    {"kind":"tweet_keyword","value":"𓆩꙳༘ꦿ⛲","category":"engagement_bait"},
+    {"kind":"tweet_keyword","value":"🦦\n🐦🤥\n🤝\n🧦","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"18岁的屌","category":"cn_solicitation"},
+    {"kind":"tweet_keyword","value":"👰\n🛗\n🐲☀️\n🧱","category":"cn_solicitation"}
   ]
 }
