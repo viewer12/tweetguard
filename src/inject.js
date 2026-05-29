@@ -1518,7 +1518,24 @@
               is_reply: data.isReply
             }
           }).then(rev => {
-            if (rev && rev.add_signature) addLearnedRule(rev.add_signature, data.handle, result.category, 'auto');
+            if (rev && rev.add_signature) {
+              addLearnedRule(rev.add_signature, data.handle, result.category, 'auto');
+              // AI 自动复审成功沉淀 → 记入反馈历史(标注 ai_auto 来源，与用户手动标记融合展示)
+              saveBadCaseEntry({
+                id: 'bc-' + Date.now().toString(36),
+                type: 'false_negative',
+                trigger: 'ai_auto',
+                handle: data.handle,
+                displayName: data.displayName,
+                tweetText: data.tweetText.slice(0, 300),
+                userVerdict: 'spam',
+                previousDecision: 'normal',
+                previousCategory: result.category,
+                previousSource: 'ai',
+                capturedAt: Date.now(),
+                aiAnalysis: { diagnosis: rev.diagnosis, add_signature: rev.add_signature, category: rev.category, confidence: rev.confidence }
+              });
+            }
           });
         }
       } else {

@@ -329,6 +329,7 @@ function renderBadCases() {
       <div class="badcase-item">
         <div class="badcase-head">
           <span class="badcase-tag" data-type="${escapeHtml(bc.type)}">${typeLabel}</span>
+          <span style="font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--bg-soft);border:1px solid var(--border);flex-shrink:0;color:${bc.trigger === 'ai_auto' ? 'var(--text)' : 'var(--text-faint)'};${bc.trigger === 'ai_auto' ? 'font-weight:500;' : ''}">${bc.trigger === 'ai_auto' ? 'AI 自动' : '你标记'}</span>
           <span class="badcase-handle">${escapeHtml(bc.handle || '(unknown)')}</span>
           <span class="badcase-time">${formatRelative(bc.capturedAt)}</span>
         </div>

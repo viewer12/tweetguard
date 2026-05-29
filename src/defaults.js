@@ -374,6 +374,12 @@ export function mergeConfig(stored) {
     merged.ai.model = MODEL_MIGRATIONS[provider][oldModel];
   }
 
+  // 规则源地址迁移:旧占位库 viewer12/tweetguard-rules → 主仓库内的 community-rules.json
+  // (defaults 改了不会覆盖已存 config，必须显式迁移已保存的旧地址)
+  if (merged.githubSync?.rulesUrl && /tweetguard-rules\//.test(merged.githubSync.rulesUrl)) {
+    merged.githubSync.rulesUrl = DEFAULT_CONFIG.githubSync.rulesUrl;
+  }
+
   return merged;
 }
 
