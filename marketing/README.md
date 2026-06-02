@@ -1,6 +1,6 @@
 # Chrome Web Store 上架素材
 
-本目录包含上架 Chrome Web Store 所需的全部视觉素材,以及生成它们的 SVG 源文件 + 构建脚本。
+本目录包含上架 Chrome Web Store 所需的全部视觉素材。**全部由 gpt-image-2 生成**(通过全局 [gpt-image-2 skill](~/.claude/skills/gpt-image-2/)),`ai-raw/` 是高分辨率源,`out/` 是按规格成品。
 
 ## 上传到 Chrome Web Store 的文件
 
@@ -17,43 +17,56 @@
 | [out/screenshot-4-community-1280x800.png](out/screenshot-4-community-1280x800.png) | 1280×800 | 同上 | |
 | [out/screenshot-5-ai-provider-1280x800.png](out/screenshot-5-ai-provider-1280x800.png) | 1280×800 | 同上 | |
 
-截图建议按顺序 1→5 上传,讲述故事:**规则与权重**(产品独特性) → **静默隐藏效果**(用户体验) → **AI 自动复审**(自学习壁垒) → **社区共建**(开源生态) → **BYOK 多 provider**(灵活与隐私)。
+截图按 1→5 顺序讲故事:**规则与权重**(产品独特性) → **静默隐藏效果**(用户体验) → **AI 自动复审**(自学习壁垒) → **社区共建**(开源生态) → **BYOK 多 provider**(灵活与隐私)。
 
-## 设计原则(为什么这样画)
+## ai-raw/ 是什么
 
-- **视觉与扩展实际 UI 一致**:配色 / 圆角 / 字号严格按 [options.css](../options/options.css) 的 CSS 变量取值(`--bg-soft #F8FAFC` / `--text #0F172A` / `--accent #0F172A` / `--success #059669` 等),避免店里看到的预期与装上后看到的实际产生落差。
-- **事实严格对齐代码**:硬规则、评分信号、provider 列表等数字与名称都按 [defaults.js](../src/defaults.js) 的 `HARD_RULES` / `SCORING_SIGNALS` / `PROVIDERS` 实际值写,不靠记忆推断。
-- **浏览器壳 + sidebar + 底部浮层标题** 五张截图统一构图,扫一眼能看出是同一产品的不同界面。
-- **图标含 16px 透明 padding**,严格符合 Chrome Web Store「96 内容 + 16 padding」规范(原 icon 满铺,违反规范)。
+`ai-raw/` 是 gpt-image-2 的高分辨率原始输出,`out/` 是经 `sips` 缩放/裁切到 Chrome 规格的成品。改 prompt 重做时:
+
+| ai-raw/ 源 | 生成方式 | → out/ 成品 |
+|---|---|---|
+| `icon-raw.png` (1024×1024) | `generate.sh` + 纯文字 prompt,做完后用 PIL 加 16px 透明 padding | `store-icon-128.png` |
+| `small-promo-edit-v3.png` (1536×1024) | **`edit.sh` 用 `icon-raw.png` 当参考图** + prompt | `small-promo-440x280.png` |
+| `marquee-edit-v3.png` (1536×1024) | 同上,保证盾牌 logo 跟 store icon 一致 | `marquee-1400x560.png` |
+| `screenshot-*-2k.png` (2048×1280) | `generate.sh` + 精准 prompt(中文要渲染的字用引号包) + `quality=high` | `screenshot-*-1280x800.png`(sips supersample) |
+
+[prompts.md](ai-raw/prompts.md) 留了写 prompt 的要点和坑。
 
 ## 重新生成 / 调整
 
-所有素材都是 `src/` 目录里的 SVG → 用 `scripts/svg2png.sh` 渲染成 PNG。改 SVG 后重跑脚本即可。
+需要全局 gpt-image-2 skill 已配置(API key 在 `~/.claude/skills/gpt-image-2/config.sh`)。
 
 ```bash
-# 单独生成一张:
-bash scripts/svg2png.sh marketing/src/store-icon-128.svg 128 128 marketing/out/store-icon-128.png
+# 例 1:重做 icon
+bash ~/.claude/skills/gpt-image-2/scripts/generate.sh \
+  "$(prompt content)" 1024x1024 marketing/ai-raw/icon-raw.png
+sips -Z 96 marketing/ai-raw/icon-raw.png --out /tmp/icon-96.png
+python3 -c "from PIL import Image; src=Image.open('/tmp/icon-96.png').convert('RGBA'); canvas=Image.new('RGBA',(128,128),(0,0,0,0)); canvas.paste(src,(16,16),src); canvas.save('marketing/out/store-icon-128.png')"
 
-# 全部重新生成:
-cd marketing/src
-for f in *.svg; do
-  name="${f%.svg}"
-  # 文件名末尾的尺寸约定:xxx-WxH.svg
-  size=$(echo "$f" | grep -oE '[0-9]+x[0-9]+' | tail -1)
-  W=${size%x*}; H=${size#*x}
-  bash ../../scripts/svg2png.sh "$f" "$W" "$H" "../out/$name.png"
-done
+# 例 2:重做 promo(用 icon 当参考图保 logo 一致)
+bash ~/.claude/skills/gpt-image-2/scripts/edit.sh \
+  marketing/ai-raw/icon-raw.png \
+  "$(prompt content)" 1536x1024 marketing/ai-raw/small-promo-edit-v3.png
+sips -Z 440 marketing/ai-raw/small-promo-edit-v3.png --out marketing/out/small-promo-440x280.png
+sips -c 280 440 marketing/out/small-promo-440x280.png --out marketing/out/small-promo-440x280.png
+
+# 例 3:重做 screenshot(2K supersample → 1280×800)
+bash ~/.claude/skills/gpt-image-2/scripts/generate.sh \
+  "$(prompt content)" 2048x1280 marketing/ai-raw/screenshot-N-NAME-2k.png
+sips -Z 1280 marketing/ai-raw/screenshot-N-NAME-2k.png --out marketing/out/screenshot-N-NAME-1280x800.png
+sips -c 800 1280 marketing/out/screenshot-N-NAME-1280x800.png --out marketing/out/screenshot-N-NAME-1280x800.png
 ```
 
-`scripts/svg2png.sh` 用 Chrome `--headless=new` 渲染 SVG,本机不需要装 rsvg/inkscape/ImageMagick。
+**计费提醒**:每次 `generate.sh` / `edit.sh` 调用 = $0.05(成功 / 失败 / 超时都计费)。skill 默认不做客户端 retry,失败 1 次就停,由人工决定要不要再发。**绝对不要并发跑多张** —— 实测 ≥3 张并发 server 必拒并把全部计入计费。
 
-## ⚠️ 关于截图的合规风险
+## 设计原则
 
-5 张 1280×800 截图都是 **SVG 仿真版**,严格对齐了真实 UI 的视觉,但毕竟不是真实 Chrome 截图。Chrome Web Store 政策要求截图「demonstrate the actual user experience」。绝大多数扩展(尤其只读 UI 的产品)用仿真都能过审,但**理论上有被退回的可能**。
+- **logo 一致性靠 image-to-image**:promo / marquee 都用 `edit.sh` 把 `icon-raw.png` 当输入,模型基于真实 icon 生成衍生图,盾牌设计 100% 一致。纯文字 prompt 描述"白盾深 navy 外框…"在多次生成时**必然漂移**。
+- **视觉与扩展实际 UI 对齐**:配色 / 圆角 / 字号都按 [options.css](../options/options.css) 的 CSS 变量取值(`--bg-soft #F8FAFC` / `--text #0F172A` / `--accent #0F172A` / `--success #059669`)。
+- **事实严格对齐代码**:硬规则 ID、评分信号项数、provider 列表、默认配置值,都按 [defaults.js](../src/defaults.js) 的 `HARD_RULES` / `SCORING_SIGNALS` / `PROVIDERS` 实际值写,不靠记忆推断。
+- **图标含 16px 透明 padding**:严格符合 Chrome Web Store「96 内容 + 16 padding」规范。
 
-如果被退回,补救路径:用真实 Chrome 截扩展的配置页 / popup / x.com 推文流被处理后的视觉,各截一张原始素材,我可以按相同的构图(浏览器壳 + 标题层 + 1280×800 画布)加工出真实截图版,替换 SVG 仿真版。
-
-## 店面文案建议(可选)
+## 店面文案建议
 
 - **标题**:TweetGuard — 静默过滤 X 信息流里的垃圾推文
 - **简短描述**(132 字符内):本地过滤 X 上的色情 bot、加密引流、营销号;五重检测 + 可选 AI 复审(自备 API Key)+ 社区规则共建;完全开源,无服务器、无遥测。
