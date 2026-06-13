@@ -117,6 +117,18 @@ TweetGuard 只做一件事：在用户浏览 X（twitter.com / x.com）时，自
 
 ---
 
+## 8.5 远程代码使用情况 / Remote Code（必答）
+
+**选「否,我不使用远程代码」（No, I am not using remote code）。**
+
+依据(已核对源码)：
+- 所有可执行 JS（background / content / inject / options / popup / defaults）全部打包在扩展包内。
+- `content.js` 通过 `chrome.runtime.getURL('src/inject.js')` 注入页面脚本——这是扩展包内的本地文件 URL（`chrome-extension://…`），不是远程地址，是 MV3 注入 page-context 的标准合规写法。
+- 无 `eval`、无 `new Function`、无远程 `import()`、无加载远程 `<script>`。
+- 从 GitHub 拉取的 `community-rules.json`、AI API 返回的内容,都用 `JSON.parse` 当**数据**处理,绝不作为代码执行。
+
+> 「远程代码」≠「远程数据」。本扩展会请求 GitHub / AI API 取**数据**(规则、判定结果),但不取**代码**执行,故此项为「否」。host 权限的解释见上面第 7 节。
+
 ## 9. 隐私政策 URL（必填）
 
 ```
