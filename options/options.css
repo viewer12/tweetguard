@@ -129,6 +129,40 @@ code { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; fon
   gap: 2px;
 }
 
+/* GitHub 仓库入口：常驻 sidebar 底部，每个 tab 都可见 */
+.sidebar-repo {
+  margin-top: auto;                 /* 推到 sidebar 最底部 */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.sidebar-repo:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+.sidebar-repo > svg:first-child { flex-shrink: 0; }
+.sidebar-repo-ext { margin-left: auto; opacity: 0.55; }
+
+/* 关于页：开源项目区块 */
+.about-repo-desc { margin: 0 0 12px; color: var(--text-soft); font-size: 13px; line-height: 1.6; }
+.about-repo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  text-decoration: none;
+}
+.about-repo-btn svg { flex-shrink: 0; }
+
 .nav-item {
   display: flex;
   align-items: center;

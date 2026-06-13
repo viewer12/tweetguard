@@ -55,6 +55,10 @@ async function loadAll() {
   config = mergeConfig(data.config);
   cache = data.cache || {};
   renderAll();
+  // 版本号从 manifest 动态读，避免 HTML 里硬编码导致 stale
+  const ver = chrome.runtime.getManifest().version;
+  const sv = document.getElementById('sidebar-version'); if (sv) sv.textContent = 'v' + ver;
+  const av = document.getElementById('about-version'); if (av) av.textContent = ver;
 }
 
 async function saveConfig() {
