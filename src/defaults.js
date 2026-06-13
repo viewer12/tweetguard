@@ -243,7 +243,8 @@ export const PROVIDERS = {
     models: ['deepseek-v4-flash', 'deepseek-v4-pro'],
     defaultModel: 'deepseek-v4-flash',
     format: 'openai',
-    note: 'flash 极快极便宜适合 spam 分类 · pro 更准但贵 4-5 倍'
+    note: 'flash 极快极便宜适合 spam 分类 · pro 更准但贵 4-5 倍',
+    apiKeyUrl: 'https://platform.deepseek.com/api_keys'
   },
   openai: {
     label: 'OpenAI',
@@ -251,7 +252,8 @@ export const PROVIDERS = {
     models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini'],
     defaultModel: 'gpt-4o-mini',
     format: 'openai',
-    note: '综合能力强'
+    note: '综合能力强',
+    apiKeyUrl: 'https://platform.openai.com/api-keys'
   },
   anthropic: {
     label: 'Anthropic Claude',
@@ -259,7 +261,8 @@ export const PROVIDERS = {
     models: ['claude-haiku-4-5', 'claude-sonnet-4-6'],
     defaultModel: 'claude-haiku-4-5',
     format: 'anthropic',
-    note: '推理能力最强，价格较高'
+    note: '推理能力最强，价格较高',
+    apiKeyUrl: 'https://console.anthropic.com/settings/keys'
   },
   gemini: {
     label: 'Google Gemini',
@@ -267,7 +270,8 @@ export const PROVIDERS = {
     models: ['gemini-2.0-flash', 'gemini-2.0-flash-lite'],
     defaultModel: 'gemini-2.0-flash',
     format: 'gemini',
-    note: '免费层很大'
+    note: '免费层很大',
+    apiKeyUrl: 'https://aistudio.google.com/apikey'
   },
   groq: {
     label: 'Groq',
@@ -275,7 +279,8 @@ export const PROVIDERS = {
     models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
     defaultModel: 'llama-3.1-8b-instant',
     format: 'openai',
-    note: '速度极快'
+    note: '速度极快',
+    apiKeyUrl: 'https://console.groq.com/keys'
   },
   openrouter: {
     label: 'OpenRouter',
@@ -283,7 +288,8 @@ export const PROVIDERS = {
     models: ['openai/gpt-4o-mini', 'anthropic/claude-haiku-4-5', 'deepseek/deepseek-chat'],
     defaultModel: 'openai/gpt-4o-mini',
     format: 'openai',
-    note: '一个 key 用多家模型'
+    note: '一个 key 用多家模型',
+    apiKeyUrl: 'https://openrouter.ai/keys'
   },
   ollama: {
     label: 'Ollama (本地)',

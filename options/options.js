@@ -130,6 +130,7 @@ function renderAI() {
 
   // Model 列表
   renderModelOptions(providerSelect.value);
+  updateKeyLink(providerSelect.value);
 
   $('#opt-ai-key').value = config.ai?.apiKey || '';
   $('#opt-ai-baseurl').value = config.ai?.baseURL || PROVIDERS[providerSelect.value]?.baseURL || '';
@@ -164,6 +165,20 @@ function renderModelOptions(providerKey) {
   } else if (currentModel) {
     customInput.style.display = '';
     customInput.value = currentModel;
+  }
+}
+
+// 按当前 provider 显示「获取 API Key」入口链接（ollama 本地 / custom 自定义无需 key，隐藏）
+function updateKeyLink(providerKey) {
+  const link = $('#opt-ai-key-link');
+  if (!link) return;
+  const p = PROVIDERS[providerKey];
+  if (p && p.apiKeyUrl) {
+    link.href = p.apiKeyUrl;
+    link.textContent = `获取 ${p.label} API Key ↗`;
+    link.hidden = false;
+  } else {
+    link.hidden = true;
   }
 }
 
@@ -542,6 +557,7 @@ function bindEvents() {
     config.ai.model = PROVIDERS[newProvider]?.defaultModel || '';
     $('#opt-ai-provider-note').textContent = PROVIDERS[newProvider]?.note || '';
     renderModelOptions(newProvider);
+    updateKeyLink(newProvider);
     $('#opt-ai-baseurl').value = config.ai.baseURL;
     scheduleSave();
   });

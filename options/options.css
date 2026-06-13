@@ -163,6 +163,23 @@ code { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; fon
 }
 .about-repo-btn svg { flex-shrink: 0; }
 
+/* AI 页：API Key 获取入口链接 */
+.field-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.field-link {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.field-link:hover { text-decoration: underline; }
+
 .nav-item {
   display: flex;
   align-items: center;
