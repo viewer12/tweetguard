@@ -193,7 +193,7 @@ export const DEFAULT_CONFIG = {
     enabled: false,
     provider: 'deepseek',
     apiKey: '',
-    model: 'deepseek-chat',
+    model: 'deepseek-v4-flash',
     baseURL: 'https://api.deepseek.com/v1',
     customPrompt: '',                 // 空 = 使用 DEFAULT_SYSTEM_PROMPT（分类用）
     customReviewPrompt: '',           // 空 = 使用 BAD_CASE_REVIEW_PROMPT（用户标记误判时复审用）
@@ -249,8 +249,8 @@ export const PROVIDERS = {
   openai: {
     label: 'OpenAI',
     baseURL: 'https://api.openai.com/v1',
-    models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini'],
-    defaultModel: 'gpt-4o-mini',
+    models: ['gpt-5.4-nano', 'gpt-5.4-mini', 'gpt-5.4', 'gpt-5.5'],
+    defaultModel: 'gpt-5.4-mini',
     format: 'openai',
     note: '综合能力强',
     apiKeyUrl: 'https://platform.openai.com/api-keys'
@@ -258,7 +258,7 @@ export const PROVIDERS = {
   anthropic: {
     label: 'Anthropic Claude',
     baseURL: 'https://api.anthropic.com/v1',
-    models: ['claude-haiku-4-5', 'claude-sonnet-4-6'],
+    models: ['claude-haiku-4-5', 'claude-sonnet-4-6', 'claude-opus-4-8'],
     defaultModel: 'claude-haiku-4-5',
     format: 'anthropic',
     note: '推理能力最强，价格较高',
@@ -267,8 +267,8 @@ export const PROVIDERS = {
   gemini: {
     label: 'Google Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta',
-    models: ['gemini-2.0-flash', 'gemini-2.0-flash-lite'],
-    defaultModel: 'gemini-2.0-flash',
+    models: ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'],
+    defaultModel: 'gemini-2.5-flash',
     format: 'gemini',
     note: '免费层很大',
     apiKeyUrl: 'https://aistudio.google.com/apikey'
@@ -276,7 +276,7 @@ export const PROVIDERS = {
   groq: {
     label: 'Groq',
     baseURL: 'https://api.groq.com/openai/v1',
-    models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
+    models: ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b'],
     defaultModel: 'llama-3.1-8b-instant',
     format: 'openai',
     note: '速度极快',
@@ -285,8 +285,8 @@ export const PROVIDERS = {
   openrouter: {
     label: 'OpenRouter',
     baseURL: 'https://openrouter.ai/api/v1',
-    models: ['openai/gpt-4o-mini', 'anthropic/claude-haiku-4-5', 'deepseek/deepseek-chat'],
-    defaultModel: 'openai/gpt-4o-mini',
+    models: ['anthropic/claude-haiku-4.5', 'google/gemini-2.5-flash', 'deepseek/deepseek-v4-flash', 'openai/gpt-4o-mini', 'x-ai/grok-4.3'],
+    defaultModel: 'anthropic/claude-haiku-4.5',
     format: 'openai',
     note: '一个 key 用多家模型',
     apiKeyUrl: 'https://openrouter.ai/keys'
@@ -294,7 +294,7 @@ export const PROVIDERS = {
   ollama: {
     label: 'Ollama (本地)',
     baseURL: 'http://localhost:11434/v1',
-    models: ['qwen2.5:7b', 'llama3.1:8b', 'qwen2.5:14b'],
+    models: ['qwen2.5:7b', 'qwen2.5:14b', 'llama3.1:8b', 'llama3.2:3b'],
     defaultModel: 'qwen2.5:7b',
     format: 'openai',
     note: '完全离线，推文不离开你的设备'
