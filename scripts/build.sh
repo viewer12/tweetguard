@@ -15,7 +15,7 @@ zip -rq "$OUT" \
   manifest.json \
   src options popup icons \
   LICENSE \
-  -x "*.DS_Store" "*/._*"
+  -x "*.DS_Store" "*/._*" "icons/icon.svg"
 
 echo "✓ 打包完成: $OUT (version ${VERSION})"
 unzip -l "$OUT"
