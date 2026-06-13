@@ -113,14 +113,14 @@ Built-in rules alone cover most overt spam. Enabling AI lifts coverage from ~80%
 1. Toolbar TweetGuard icon → **Settings** → **AI Provider**.
 2. Pick a provider, enter the API key, click **Run test** (5 known samples).
 
-| Provider | Model | ~Cost per 1000 evals |
+| Provider | Model | Notes |
 |---|---|---|
-| DeepSeek | `deepseek-v4-flash` | ≈ ¥0.30 |
-| OpenAI | `gpt-4o-mini` | ≈ $0.15 |
-| Anthropic | `claude-haiku-4-5` | ≈ $1 |
-| Gemini | `gemini-2.0-flash` | free tier |
-| Groq | `llama-3.1-8b-instant` | — |
-| Ollama | `qwen2.5:7b` | $0 (local; tweets never leave your machine) |
+| DeepSeek | `deepseek-v4-flash` | fast & cheap, ideal for spam classification |
+| OpenAI | `gpt-5.4-mini` | strong all-rounder |
+| Anthropic | `claude-haiku-4-5` | fastest Claude, near-frontier |
+| Gemini | `gemini-2.5-flash` | generous free tier |
+| Groq | `llama-3.1-8b-instant` | extremely fast |
+| Ollama | `qwen2.5:7b` | local; tweets never leave your machine |
 
 Both prompts (classifier / review) are viewable, editable and resettable under **Settings → Prompt**.
 
@@ -149,28 +149,7 @@ Rule file format:
 - Ollama local mode keeps tweets on your machine.
 - **Never judges spam by username (@handle)**: handles are structurally unreliable (Asian users widely use "romanized name + digits"). Even display-name hard rules are kept to a tiny set (Chinese solicitation phrases, WeChat/TG); other display-name signals are down-weighted in scoring; AI-learned and community rules are **tweet-content only**.
 
----
-
-## Project structure
-
-```
-TweetGuard/
-├── manifest.json              Chrome MV3 manifest (storage + alarms)
-├── community-rules.json       community rule set (default GitHub sync source)
-├── src/
-│   ├── content.js             isolated-world bridge (storage / AI request relay)
-│   ├── inject.js              page-context core: DOM observe, L0 scoring,
-│   │                          cache, AI client, auto-distill, following sync, actuator
-│   ├── background.js          service worker: AI fetch proxy + GitHub rule sync
-│   ├── defaults.js            default config, provider catalog, prompts, rule single-source
-│   └── styles.css             injected CSS (collapse strip / blur / pending / sync button)
-├── popup/                     toolbar popup (quick toggle + stats)
-├── options/                   full settings page (General / AI / Prompt / Rules / Accounts / Lists / About)
-├── docs/                      design docs
-└── icons/                     icon assets (SVG source + 16/32/48/128 PNG)
-```
-
-No build step. Reload the extension in `chrome://extensions` and refresh `x.com` after edits.
+Full privacy policy: [PRIVACY.md](PRIVACY.md).
 
 ---
 
@@ -180,17 +159,6 @@ No build step. Reload the extension in `chrome://extensions` and refresh `x.com`
 - **Code**: Chinese spam templates (`RX` block in `src/inject.js`), multilingual rules, provider adapters, UI polish, regression fixtures.
 
 Before a PR: scroll-test on real `x.com`; make sure weak signals don't auto-hide legit accounts; `node --check src/*.js` passes.
-
----
-
-## Roadmap
-
-- [x] Cache / config export-import
-- [x] Community rule subscription & contribution (GitHub sync)
-- [ ] Chrome Web Store listing
-- [ ] Firefox port (MV3)
-- [ ] In-browser classifier (`transformers.js`, no AI key)
-- [ ] Full English UI
 
 ---
 
