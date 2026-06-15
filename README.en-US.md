@@ -9,7 +9,7 @@ Chrome extension that filters spam, marketing accounts, NSFW bots and crypto shi
 [简体中文](README.md) · English
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-0f172a.svg)](LICENSE)
-[![Chrome Extension](https://img.shields.io/badge/chrome-extension-0f172a.svg)](#install)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Install-4285F4.svg)](https://chromewebstore.google.com/detail/jfjlbcabegghndnlplikppaeimbopfjp?utm_source=item-share-cb)
 [![Manifest V3](https://img.shields.io/badge/manifest-v3-0f172a.svg)](manifest.json)
 [![No Backend](https://img.shields.io/badge/backend-none-059669.svg)](#privacy)
 
@@ -82,9 +82,17 @@ Flagged tweets collapse into a thin, card-width strip showing the reason and sou
 
 ## Install
 
-Until it's on the Chrome Web Store, install in developer mode. Pick either option:
+### ✅ Recommended: install from the Chrome Web Store
 
-**Option A — download the packaged zip (recommended)**
+[**Install TweetGuard from the Chrome Web Store**](https://chromewebstore.google.com/detail/jfjlbcabegghndnlplikppaeimbopfjp?utm_source=item-share-cb)
+
+This is the simplest and most stable installation path. Chrome will keep the extension updated automatically.
+
+### Manual install (developers / sideloading)
+
+If you want to test the latest source or make local changes, you can still install in developer mode. Pick either option:
+
+**Option A — download the packaged zip**
 
 1. Grab the latest `tweetguard-x.y.z.zip` from [Releases](https://github.com/viewer12/tweetguard/releases) and **unzip** it into a permanent folder (don't delete it — the extension runs from there).
 2. Open `chrome://extensions` in Chrome / Edge / Brave.
