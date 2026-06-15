@@ -26,9 +26,8 @@ dist/
 build/
 out/
 
-# 例外:marketing/out 是上架商店用的 PNG 成品,直接克隆仓库就能用,不需要每次重渲染
-!marketing/out/
-!marketing/out/**
+# Marketing/store assets are generated or non-product-code content.
+marketing/
 
 # Logs
 *.log
